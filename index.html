@@ -75,8 +75,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script>
-        // 여기에 본인의 firebaseConfig 코드를 붙여넣으세요.
-        const firebaseConfig = {
+    // 여기에 본인의 firebaseConfig 코드를 붙여넣으세요.
+    const firebaseConfig = {
   apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
   authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
   projectId: "my-cbt-app-2cdb9",
@@ -84,134 +84,240 @@
   messagingSenderId: "1091430877229",
   appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
 };
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
 
-        // 전역 변수 & HTML 요소 (이전과 유사)
-        let currentSubjectId = null;
-        let currentSubjectData = {};
-        let questions = [];
-        const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'bulk-add-view'];
+    // Firebase 초기화
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        function showView(viewId) { views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId)); }
+    // 전역 변수
+    let currentSubjectId = null;
+    let currentSubjectData = {};
+    let questions = [];
+    let currentQuiz = 0;
+    let score = 0;
+    let selectedOption = null;
 
-        async function loadSubjects() { /* 이전과 동일 */ }
-        function selectSubject(id, data) { /* 이전과 동일 */ }
-        async function loadQuestionsForSubject() { /* 이전과 동일 */ }
-        function displayCurrentQuiz() { /* 이전과 동일, UI 구조에 맞게 수정 필요 */ }
+    // HTML 요소
+    const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'bulk-add-view'];
 
-        /** [신규] 문제 관리 화면 표시 */
-        async function showManagementView() {
-            showView('management-view');
-            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
-            const container = document.getElementById('question-list-container');
-            container.innerHTML = '문제 목록 로딩 중...';
-            
-            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
-            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            container.innerHTML = '';
-            if (questions.length === 0) {
-                container.innerHTML = '<p>문제가 없습니다. 새 문제를 추가해보세요.</p>';
+    /** 화면 전환 함수 */
+    function showView(viewId) {
+        views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId));
+    }
+
+    /** 과목 목록 불러오기 */
+    async function loadSubjects() {
+        showView('subject-view');
+        const subjectListDiv = document.getElementById('subject-list');
+        subjectListDiv.innerHTML = '과목 로딩 중...';
+        
+        try {
+            const snapshot = await db.collection('subjects').orderBy('name').get();
+            if (snapshot.empty) {
+                subjectListDiv.innerHTML = '과목이 없습니다. Firebase 콘솔에서 첫 과목을 추가해주세요.';
                 return;
             }
-
-            questions.forEach(q => {
-                const item = document.createElement('div');
-                item.className = 'question-item';
-                item.innerHTML = `
-                    <span class="question-item-text">${q.text}</span>
-                    <div>
-                        <button class="button secondary-button" onclick="showEditForm('${q.id}')">수정</button>
-                        <button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text.replace(/'/g, "\\'")}')">삭제</button>
-                    </div>
-                `;
-                container.appendChild(item);
+            
+            subjectListDiv.innerHTML = '';
+            snapshot.forEach(doc => {
+                const subject = doc.data();
+                const button = document.createElement('button');
+                button.textContent = `${subject.name} (${subject.questionCount || 0}문제)`;
+                button.className = 'button primary-button';
+                button.onclick = () => selectSubject(doc.id, subject);
+                subjectListDiv.appendChild(button);
             });
+        } catch (error) {
+            console.error("과목 로드 오류:", error);
+            subjectListDiv.innerHTML = '과목을 불러오는 데 실패했습니다.';
+        }
+    }
+    
+    /** 과목 선택 시 실행 */
+    function selectSubject(id, data) {
+        currentSubjectId = id;
+        currentSubjectData = data;
+        document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
+        showView('quiz-view');
+        loadQuestionsForSubject();
+    }
+
+    /** 선택된 과목의 문제들 불러오기 */
+    async function loadQuestionsForSubject() {
+        const quizBody = document.getElementById('quiz-body');
+        quizBody.innerHTML = '<p>문제 로딩 중...</p>';
+        
+        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+        questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        currentQuiz = 0;
+        score = 0;
+        displayCurrentQuiz();
+    }
+    
+    /** [수정됨] 현재 퀴즈 표시 함수 */
+    function displayCurrentQuiz() {
+        const quizBody = document.getElementById('quiz-body');
+        selectedOption = null;
+
+        if (questions.length === 0) {
+             quizBody.innerHTML = "이 과목에 문제가 없습니다. '문제 관리'에서 새 문제를 추가해보세요.";
+             return;
         }
 
-        /** [신규] 문제 삭제 함수 */
-        async function deleteQuestion(id, text) {
-            if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
-
-            const subjectRef = db.collection('subjects').doc(currentSubjectId);
-            const questionRef = subjectRef.collection('questions').doc(id);
-
-            try {
-                await db.runTransaction(async (transaction) => {
-                    const subjectDoc = await transaction.get(subjectRef);
-                    const newCount = (subjectDoc.data().questionCount || 1) - 1;
-                    transaction.update(subjectRef, { questionCount: newCount });
-                    transaction.delete(questionRef);
-                });
-                alert('문제가 삭제되었습니다.');
-                showManagementView(); // 목록 새로고침
-            } catch (error) {
-                console.error("문제 삭제 오류:", error);
-                alert('문제 삭제 중 오류가 발생했습니다.');
-            }
-        }
-
-        /** [신규] 문제 추가 폼 보여주기 */
-        function showAddForm() {
-            document.getElementById('add-edit-header').textContent = '새 문제 추가';
-            document.getElementById('editing-question-id').value = ''; // 수정 모드가 아님을 표시
-            
-            // 폼 필드 초기화
-            document.getElementById('q-text').value = '';
-            document.getElementById('q-answer').value = '';
-            document.getElementById('q-options-container').innerHTML = '<input type="text" class="new-option" placeholder="보기 1"><input type="text" class="new-option" placeholder="보기 2">';
-            
-            populatePartSelect(); // 파트 목록 채우기
-            document.getElementById('save-btn').onclick = saveQuestion; // 저장 버튼 기능 연결
-            showView('add-edit-view');
-        }
-
-        /** [신규] 문제 수정 폼 보여주기 */
-        function showEditForm(id) {
-            const question = questions.find(q => q.id === id);
-            if (!question) return;
-
-            document.getElementById('add-edit-header').textContent = '문제 수정';
-            document.getElementById('editing-question-id').value = id; // 수정 모드임을 표시
-            
-            // 기존 데이터로 폼 채우기
-            document.getElementById('q-text').value = question.text;
-            document.getElementById('q-answer').value = question.answer;
-            populatePartSelect(question.partName);
-            
-            const optionsContainer = document.getElementById('q-options-container');
-            optionsContainer.innerHTML = '';
-            question.options.forEach(opt => {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'new-option';
-                input.value = opt;
-                optionsContainer.appendChild(input);
-            });
-            
-            document.getElementById('save-btn').onclick = saveQuestion;
-            showView('add-edit-view');
+        if (currentQuiz >= questions.length) {
+            quizBody.innerHTML = `<h2>퀴즈 결과: ${questions.length}문제 중 ${score}문제 정답!</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`;
+            return;
         }
         
-        /** [신규] 문제 저장/수정 함수 */
-        async function saveQuestion() {
-            const id = document.getElementById('editing-question-id').value;
-            const isEditing = !!id;
-            
-            const text = document.getElementById('q-text').value.trim();
-            const answer = document.getElementById('q-answer').value.trim();
-            const partName = document.getElementById('q-part').value;
-            const options = Array.from(document.querySelectorAll('.new-option')).map(i => i.value.trim()).filter(Boolean);
+        // 퀴즈 화면의 기본 구조를 먼저 그리고, 그 다음에 각 요소를 찾아 내용을 채웁니다.
+        quizBody.innerHTML = `
+            <div id="question"></div>
+            <ul class="options-container" id="options-container"></ul>
+            <button id="submit-btn" class="button primary-button">정답 제출</button>
+        `;
 
-            if (!text || !answer || !partName || options.length < 2) return alert("모든 필드를 올바르게 입력해주세요.");
+        const questionEl = document.getElementById('question');
+        const optionsContainer = document.getElementById('options-container');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        const currentQuizData = questions[currentQuiz];
+        questionEl.textContent = `${currentQuiz + 1}. ${currentQuizData.text}`;
+        
+        optionsContainer.innerHTML = '';
+        currentQuizData.options.forEach(optionText => {
+            const li = document.createElement('li');
+            li.className = 'option';
+            li.textContent = optionText;
+            li.onclick = () => {
+                const currentSelected = document.querySelector('.option.selected');
+                if (currentSelected) currentSelected.classList.remove('selected');
+                li.classList.add('selected');
+                selectedOption = optionText;
+            };
+            optionsContainer.appendChild(li);
+        });
 
-            const questionData = { text, answer, partName, options };
-            
-            if (isEditing) { // 수정 모드
+        submitBtn.onclick = submitAnswer;
+    }
+
+    /** 정답 제출 함수 */
+    function submitAnswer() {
+        if (!selectedOption) return alert("보기를 선택해주세요!");
+        if (selectedOption === questions[currentQuiz].answer) score++;
+        currentQuiz++;
+        displayCurrentQuiz();
+    }
+
+    /** 문제 관리 화면 표시 함수 */
+    async function showManagementView() {
+        showView('management-view');
+        document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+        const container = document.getElementById('question-list-container');
+        container.innerHTML = '문제 목록 로딩 중...';
+        
+        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+        questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        container.innerHTML = '';
+        if (questions.length === 0) {
+            container.innerHTML = '<p>문제가 없습니다. 새 문제를 추가해보세요.</p>';
+            return;
+        }
+
+        questions.forEach(q => {
+            const item = document.createElement('div');
+            item.className = 'question-item';
+            item.innerHTML = `
+                <span class="question-item-text">${q.text}</span>
+                <div>
+                    <button class="button secondary-button" onclick="showEditForm('${q.id}')">수정</button>
+                    <button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text.replace(/'/g, "\\'")}')">삭제</button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    /** 문제 삭제 함수 */
+    async function deleteQuestion(id, text) {
+        if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+
+        const subjectRef = db.collection('subjects').doc(currentSubjectId);
+        const questionRef = subjectRef.collection('questions').doc(id);
+
+        try {
+            await db.runTransaction(async (transaction) => {
+                const subjectDoc = await transaction.get(subjectRef);
+                const newCount = (subjectDoc.data().questionCount || 1) - 1;
+                transaction.update(subjectRef, { questionCount: newCount });
+                transaction.delete(questionRef);
+            });
+            alert('문제가 삭제되었습니다.');
+            currentSubjectData.questionCount = (currentSubjectData.questionCount || 1) - 1;
+            showManagementView(); // 목록 새로고침
+        } catch (error) {
+            console.error("문제 삭제 오류:", error);
+            alert('문제 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    /** 문제 추가 폼 보여주기 */
+    function showAddForm() {
+        document.getElementById('add-edit-header').textContent = '새 문제 추가';
+        document.getElementById('editing-question-id').value = ''; 
+        document.getElementById('q-text').value = '';
+        document.getElementById('q-answer').value = '';
+        document.getElementById('q-options-container').innerHTML = '<input type="text" class="new-option" placeholder="보기 1"><input type="text" class="new-option" placeholder="보기 2">';
+        populatePartSelect();
+        document.getElementById('save-btn').onclick = saveQuestion;
+        showView('add-edit-view');
+    }
+
+    /** 문제 수정 폼 보여주기 */
+    function showEditForm(id) {
+        const question = questions.find(q => q.id === id);
+        if (!question) return;
+
+        document.getElementById('add-edit-header').textContent = '문제 수정';
+        document.getElementById('editing-question-id').value = id;
+        document.getElementById('q-text').value = question.text;
+        document.getElementById('q-answer').value = question.answer;
+        populatePartSelect(question.partName);
+        
+        const optionsContainer = document.getElementById('q-options-container');
+        optionsContainer.innerHTML = '';
+        question.options.forEach(opt => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'new-option';
+            input.value = opt;
+            optionsContainer.appendChild(input);
+        });
+        
+        document.getElementById('save-btn').onclick = saveQuestion;
+        showView('add-edit-view');
+    }
+    
+    /** 문제 저장/수정 함수 */
+    async function saveQuestion() {
+        const id = document.getElementById('editing-question-id').value;
+        const isEditing = !!id;
+        
+        const text = document.getElementById('q-text').value.trim();
+        const answer = document.getElementById('q-answer').value.trim();
+        const partName = document.getElementById('q-part').value;
+        const options = Array.from(document.querySelectorAll('.new-option')).map(i => i.value.trim()).filter(Boolean);
+
+        if (!text || !answer || !partName || options.length < 2) return alert("모든 필드를 올바르게 입력해주세요.");
+
+        const questionData = { text, answer, partName, options };
+        
+        try {
+            if (isEditing) {
                 await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(questionData);
                 alert('문제가 수정되었습니다.');
-            } else { // 추가 모드
+            } else {
                 const subjectRef = db.collection('subjects').doc(currentSubjectId);
                 const questionRef = subjectRef.collection('questions').doc();
                 await db.runTransaction(async t => {
@@ -221,65 +327,82 @@
                     t.set(questionRef, questionData);
                 });
                 alert('문제가 추가되었습니다.');
+                currentSubjectData.questionCount = (currentSubjectData.questionCount || 0) + 1;
             }
             showManagementView();
+        } catch (error) {
+            console.error("문제 저장 오류: ", error);
+            alert("저장 중 오류가 발생했습니다.");
         }
+    }
 
-        /** [신규] 여러 문제 추가 함수 (카운트 업데이트 기능 추가) */
-        async function addBulkQuestions() {
-            const bulkText = document.getElementById('bulk-text').value.trim();
-            const questionBlocks = bulkText.split('---');
-            const subjectRef = db.collection('subjects').doc(currentSubjectId);
-            const questionsColRef = subjectRef.collection('questions');
-            let addedCount = 0;
+    /** 여러 문제 추가 함수 */
+    async function addBulkQuestions() {
+        const bulkText = document.getElementById('bulk-text').value.trim();
+        const questionBlocks = bulkText.split('---');
+        const subjectRef = db.collection('subjects').doc(currentSubjectId);
+        const questionsColRef = subjectRef.collection('questions');
+        let addedCount = 0;
 
-            try {
-                await db.runTransaction(async t => {
-                    const subjectDoc = await t.get(subjectRef);
-                    
-                    questionBlocks.forEach(block => {
-                        // ... 블록 파싱 로직 (이전과 유사) ...
-                        const qData = { /* 파싱된 데이터 */ };
-                        if (qData.text && qData.answer) {
-                           t.set(questionsColRef.doc(), qData);
-                           addedCount++;
-                        }
+        try {
+            await db.runTransaction(async t => {
+                const subjectDoc = await t.get(subjectRef);
+                const parts = subjectDoc.data().partOrder || [];
+
+                questionBlocks.forEach(block => {
+                    const lines = block.trim().split('\n');
+                    const qData = { options: [] };
+                    lines.forEach(line => {
+                        if (line.toLowerCase().startsWith('문제:')) qData.text = line.substring(3).trim();
+                        else if (line.toLowerCase().startsWith('보기:')) qData.options = line.substring(3).trim().split(',').map(s => s.trim());
+                        else if (line.toLowerCase().startsWith('정답:')) qData.answer = line.substring(3).trim();
+                        else if (line.toLowerCase().startsWith('해설:')) qData.explanation = line.substring(3).trim();
                     });
 
-                    const newCount = (subjectDoc.data().questionCount || 0) + addedCount;
-                    t.update(subjectRef, { questionCount: newCount });
+                    if (qData.text && qData.answer && qData.options.length > 0) {
+                       qData.partName = qData.partName || (parts.length > 0 ? parts[0] : "기본 파트");
+                       t.set(questionsColRef.doc(), qData);
+                       addedCount++;
+                    }
                 });
-                
-                if (addedCount > 0) {
-                    alert(`${addedCount}개의 문제가 저장되었습니다.`);
-                    showManagementView();
-                } else {
-                    alert('양식에 맞는 문제를 찾지 못했습니다.');
-                }
-            } catch (e) {
-                console.error("대량 추가 오류: ", e);
-                alert('오류가 발생했습니다.');
-            }
-        }
-        
-        /** 유틸리티 함수들 */
-        function addOptionField() { /* 이전과 동일 */ }
-        function populatePartSelect(selectedValue) {
-            const partSelect = document.getElementById('q-part');
-            partSelect.innerHTML = '';
-            (currentSubjectData.partOrder || []).forEach(part => {
-                const option = document.createElement('option');
-                option.value = part;
-                option.textContent = part;
-                if (part === selectedValue) option.selected = true;
-                partSelect.appendChild(option);
+                const newCount = (subjectDoc.data().questionCount || 0) + addedCount;
+                t.update(subjectRef, { questionCount: newCount });
             });
+            
+            if (addedCount > 0) {
+                alert(`${addedCount}개의 문제가 저장되었습니다.`);
+                currentSubjectData.questionCount = (currentSubjectData.questionCount || 0) + addedCount;
+                showManagementView();
+            } else {
+                alert('양식에 맞는 문제를 찾지 못했습니다.');
+            }
+        } catch (e) {
+            console.error("대량 추가 오류: ", e);
+            alert('오류가 발생했습니다.');
         }
+    }
+    
+    /** 유틸리티 함수들 */
+    function addOptionField() {
+        const container = document.getElementById('q-options-container');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'new-option';
+        input.placeholder = `보기 ${container.children.length + 1}`;
+        container.appendChild(input);
+    }
+    function populatePartSelect(selectedValue) {
+        const partSelect = document.getElementById('q-part');
+        partSelect.innerHTML = '';
+        (currentSubjectData.partOrder || []).forEach(part => {
+            const option = document.createElement('option');
+            option.value = part;
+            option.textContent = part;
+            if (part === selectedValue) option.selected = true;
+            partSelect.appendChild(option);
+        });
+    }
 
-        // 페이지 첫 로드 시 과목 목록 불러오기
-        loadSubjects();
-        // -- 이 아래에 퀴즈 풀이 로직(displayCurrentQuiz, submitAnswer 등)에 대한 함수들을
-        // -- 이전 코드에서 가져와 필요에 맞게 수정하여 배치하면 됩니다.
-    </script>
-</body>
-</html>
+    // 페이지 첫 로드 시 과목 목록 불러오기
+    loadSubjects();
+</script>
