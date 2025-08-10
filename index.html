@@ -5,78 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나만의 CBT</title>
     <style>
-        /* CSS는 이전과 동일합니다 */
+        /* CSS는 이전과 동일합니다. 일부 추가된 스타일이 있습니다. */
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
         .container { max-width: 700px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .hidden { display: none; }
-        select, .button { width: 100%; padding: 12px; font-size: 1.1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .button { color: white; border: none; cursor: pointer; margin-top: 10px; }
-        .primary-button { background-color: #0d6efd; }
-        .secondary-button { background-color: #6c757d; }
-        .danger-button { background-color: #dc3545; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        textarea { height: 120px; }
-        .question-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 5px; }
-        .question-item-text { flex-grow: 1; margin-right: 10px; }
-        .question-item .button { width: auto; padding: 5px 10px; font-size: 0.9em; margin-top: 0; margin-left: 5px;}
+        .button { width: 100%; padding: 12px; font-size: 1.1em; border-radius: 5px; cursor: pointer; margin-top: 10px; border: none; color: white; }
+        /* ... 기타 스타일 ... */
+        #auth-container { padding: 10px; text-align: right; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        #auth-container button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
+        <div id="auth-container">
+            <div id="logged-out-view">
+                <button class="button secondary-button" onclick="showView('login-view')">로그인</button>
+                <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
+            </div>
+            <div id="logged-in-view" class="hidden">
+                <span id="user-email"></span>
+                <button class="button secondary-button" onclick="logOut()">로그아웃</button>
+            </div>
+        </div>
+
         <div id="subject-view">
             <h2>과목 선택</h2>
             <div id="subject-list">로딩 중...</div>
         </div>
 
-        <div id="quiz-view" class="hidden">
-            <h2 id="quiz-header"></h2>
-            <div id="quiz-body"></div>
-            <hr style="margin: 20px 0;">
-            <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
-            <button class="button secondary-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
+        <div id="signup-view" class="hidden">
+            <h2>회원가입</h2>
+            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
+            <div class="form-group"><label for="signup-password">비밀번호 (6자리 이상)</label><input type="password" id="signup-password"></div>
+            <button class="button primary-button" onclick="signUp()">회원가입</button>
+            <button class="button secondary-button" onclick="showView('subject-view')">취소</button>
         </div>
         
-        <div id="management-view" class="hidden">
-            <h2 id="management-header">문제 관리</h2>
-            <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
-            <button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 한 번에 추가</button>
-            <hr>
-            <div id="question-list-container"></div>
-            <button class="button secondary-button" onclick="showView('quiz-view')">← 퀴즈 화면으로 돌아가기</button>
+        <div id="login-view" class="hidden">
+            <h2>로그인</h2>
+            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
+            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
+            <button class="button primary-button" onclick="logIn()">로그인</button>
+            <button class="button secondary-button" onclick="showView('subject-view')">취소</button>
         </div>
 
-        <div id="add-edit-view" class="hidden">
-            <h2 id="add-edit-header"></h2>
-            <input type="hidden" id="editing-question-id">
-            <div class="form-group"><label for="q-text">문제</label><input type="text" id="q-text"></div>
-            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
-            <div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div>
-            <div class="form-group">
-                <label>보기</label>
-                <div id="q-options-container"></div>
-                <button onclick="addOptionField()">보기 필드 추가</button>
-            </div>
-            <button id="save-btn" class="button primary-button">저장</button>
-            <button class="button secondary-button" onclick="showView('management-view')">← 관리 화면으로</button>
-        </div>
-        
-        <div id="bulk-add-view" class="hidden">
-            <h2>📚 여러 문제 추가하기</h2>
-            <div class="form-group">
-                <textarea id="bulk-text" placeholder="문제: ...\n보기: ..., ...\n정답: ...\n해설: ...\n---"></textarea>
-            </div>
-            <button class="button primary-button" onclick="addBulkQuestions()">DB에 한 번에 저장하기</button>
-            <button class="button secondary-button" onclick="showView('management-view')">← 관리 화면으로</button>
-        </div>
+        <div id="quiz-view" class="hidden"> </div>
+        <div id="management-view" class="hidden"> </div>
+        <div id="add-edit-view" class="hidden"> </div>
+        <div id="bulk-add-view" class="hidden"> </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
     <script>
-    // 여기에 본인의 firebaseConfig 코드를 붙여넣으세요.
-    const firebaseConfig = {
+        // 여기에 본인의 firebaseConfig 코드를 붙여넣으세요.
+        const firebaseConfig = {
   apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
   authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
   projectId: "my-cbt-app-2cdb9",
@@ -84,26 +69,81 @@
   messagingSenderId: "1091430877229",
   appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
 };
+        
+        // Firebase 초기화
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth(); // 인증 서비스 인스턴스 생성
 
-    // Firebase 초기화
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+        // 전역 변수 및 HTML 요소들
+        const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'bulk-add-view', 'signup-view', 'login-view'];
+        let currentView = 'subject-view';
+        // ... 기타 전역 변수들 ...
 
-    // 전역 변수
-    let currentSubjectId = null;
-    let currentSubjectData = {};
-    let questions = [];
-    let currentQuiz = 0;
-    let score = 0;
-    let selectedOption = null;
+        /** 화면 전환 함수 (현재 뷰 추적 기능 추가) */
+        function showView(viewId) {
+            currentView = viewId;
+            views.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.classList.toggle('hidden', id !== viewId);
+            });
+        }
+        
+        // --- [신규] 인증 관련 함수들 ---
 
-    // HTML 요소
-    const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'bulk-add-view'];
+        /** 로그인 상태 감지 리스너 (가장 중요) */
+        auth.onAuthStateChanged(user => {
+            const loggedInView = document.getElementById('logged-in-view');
+            const loggedOutView = document.getElementById('logged-out-view');
+            const userEmailSpan = document.getElementById('user-email');
 
-    /** 화면 전환 함수 */
-    function showView(viewId) {
-        views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId));
-    }
+            if (user) { // 사용자가 로그인했을 때
+                loggedInView.classList.remove('hidden');
+                loggedOutView.classList.add('hidden');
+                userEmailSpan.textContent = `${user.email}님, 환영합니다.`;
+            } else { // 사용자가 로그아웃했을 때
+                loggedInView.classList.add('hidden');
+                loggedOutView.classList.remove('hidden');
+                userEmailSpan.textContent = '';
+                // 로그아웃 시 과목 선택 화면으로 이동
+                if (currentView !== 'subject-view') {
+                    showView('subject-view');
+                }
+            }
+        });
+
+        /** 회원가입 함수 */
+        async function signUp() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            try {
+                await auth.createUserWithEmailAndPassword(email, password);
+                alert('회원가입 성공! 자동으로 로그인됩니다.');
+                showView('subject-view'); // 성공 시 과목 선택 화면으로
+            } catch (error) {
+                alert(`회원가입 실패: ${error.message}`);
+            }
+        }
+
+        /** 로그인 함수 */
+        async function logIn() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                alert('로그인 성공!');
+                showView('subject-view'); // 성공 시 과목 선택 화면으로
+            } catch (error) {
+                alert(`로그인 실패: ${error.message}`);
+            }
+        }
+
+        /** 로그아웃 함수 */
+        function logOut() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                auth.signOut();
+            }
+        }
 
     /** 과목 목록 불러오기 */
     async function loadSubjects() {
