@@ -33,6 +33,9 @@
         .feedback.incorrect { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
         .feedback p { margin: 5px 0; }
         .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
+         #management-actions { border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .question-item { display: flex; align-items: center; /* ... */ }
+        .question-item input[type="checkbox"] { margin-right: 15px; }
     </style>
 </head>
 <body>
@@ -146,16 +149,78 @@
         async function showManagementView() {
             showView('management-view');
             document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
-            const container = document.getElementById('question-list-container'); container.innerHTML = '로딩 중...';
+            const container = document.getElementById('question-list-container');
+            container.innerHTML = '로딩 중...';
+            updateSelectionActions(); // 선택 메뉴 초기화
+
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text').get();
-            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); container.innerHTML = '';
+            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            container.innerHTML = '';
             questions.forEach(q => {
-                const item = document.createElement('div'); item.className = 'question-item';
-                item.innerHTML = `<span class="question-item-text">${q.text}</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button><button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text.replace(/'/g, "\\'")}')">삭제</button></div>`;
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                // [수정] 체크박스 추가
+                item.innerHTML = `
+                    <input type="checkbox" class="question-checkbox" value="${q.id}" onchange="updateSelectionActions()">
+                    <span class="question-item-text">${q.text}</span>
+                    <div>
+                        <button class="button light-button" onclick="showEditForm('${q.id}')">수정</button>
+                    </div>
+                `;
                 container.appendChild(item);
             });
         }
 
+        /** [신규] 선택 상태에 따라 일괄 작업 메뉴 업데이트 */
+        function updateSelectionActions() {
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            const actionsDiv = document.getElementById('management-actions');
+            const countSpan = document.getElementById('selection-count');
+            
+            if (selectedCheckboxes.length > 0) {
+                actionsDiv.classList.remove('hidden');
+                countSpan.textContent = selectedCheckboxes.length;
+            } else {
+                actionsDiv.classList.add('hidden');
+            }
+        }
+
+        /** [신규] 전체 선택/해제 함수 */
+        function toggleSelectAll(checked) {
+            document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = checked);
+            updateSelectionActions();
+        }
+
+        /** [신규] 선택된 문제 일괄 삭제 함수 */
+        async function deleteSelectedQuestions() {
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+            if (!confirm(`${selectedCheckboxes.length}개의 문제를 정말 삭제하시겠습니까?`)) return;
+
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            const batch = db.batch(); // 일괄 작업을 위한 Batch 생성
+            
+            selectedCheckboxes.forEach(cb => {
+                const questionRef = subjectRef.collection('questions').doc(cb.value);
+                batch.delete(questionRef);
+            });
+
+            // 문제 개수도 한번에 업데이트
+            const newCount = (currentSubjectData.questionCount || 0) - selectedCheckboxes.length;
+            batch.update(subjectRef, { questionCount: newCount });
+
+            try {
+                await batch.commit(); // Batch 작업 실행
+                alert(`${selectedCheckboxes.length}개의 문제가 삭제되었습니다.`);
+                currentSubjectData.questionCount = newCount;
+                showManagementView(); // 목록 새로고침
+            } catch (error) {
+                console.error("일괄 삭제 오류:", error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
+        }
+        
         async function deleteQuestion(id, text) {
             if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까?`)) return;
             const subjectRef = db.collection('subjects').doc(currentSubjectId), questionRef = subjectRef.collection('questions').doc(id);
