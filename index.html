@@ -33,6 +33,12 @@
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
         .option:hover { background-color: #f5f5f5; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
+        
+        .feedback { padding: 10px; margin-top: 15px; border-radius: 5px; }
+        .feedback.correct { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .feedback.incorrect { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+        .feedback p { margin: 5px 0; }
+        .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -64,6 +70,10 @@
             <button class="button light-button" onclick="showView(auth.currentUser ? 'quiz-view' : 'subject-view')">취소</button>
         </div>
         <div id="quiz-view" class="hidden">
+            <div class="mode-toggle">
+                <label for="feedback-toggle">즉시 결과 확인</label>
+                <input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)" style="margin-left: 5px;">
+            </div>
             <h2 id="quiz-header"></h2><div id="quiz-body"></div><hr style="margin: 20px 0;">
             <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
@@ -115,6 +125,7 @@
         // 전역 변수
         let currentSubjectId, currentSubjectData, currentView;
         let questions = [], currentQuiz = 0, score = 0, selectedOption = null;
+        let immediateFeedbackMode = false;
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'bulk-add-view', 'signup-view', 'login-view'];
 
         function showView(viewId) {
@@ -127,7 +138,7 @@
             document.getElementById('logged-out-view').classList.toggle('hidden', !!user);
             if (user) {
                 document.getElementById('user-email').textContent = `${user.email}님`;
-                if(currentView === 'subject-view' || !currentView) loadSubjects();
+                loadSubjects();
             } else {
                 showView('subject-view');
                 document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
@@ -172,9 +183,10 @@
         function displayCurrentQuiz() {
             const quizBody = document.getElementById('quiz-body');
             selectedOption = null;
+            document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
             if (questions.length === 0) { quizBody.innerHTML = "<p>이 과목에 문제가 없습니다. '문제 관리'에서 추가해주세요.</p>"; return; }
             if (currentQuiz >= questions.length) { quizBody.innerHTML = `<h2>퀴즈 결과: ${score}/${questions.length}</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
-            quizBody.innerHTML = `<div id="question"></div><ul id="options-container" class="options-container"></ul><button id="submit-btn" class="button primary-button">정답 제출</button>`;
+            quizBody.innerHTML = `<div id="question"></div><ul id="options-container" class="options-container"></ul><div id="immediate-feedback"></div><button id="submit-btn" class="button primary-button">정답 제출</button>`;
             const qEl = document.getElementById('question'), optsEl = document.getElementById('options-container'), submitBtn = document.getElementById('submit-btn');
             const data = questions[currentQuiz];
             qEl.textContent = `${currentQuiz + 1}. ${data.text}`;
@@ -186,7 +198,29 @@
             submitBtn.onclick = submitAnswer;
         }
 
-        function submitAnswer() { if (!selectedOption) return; if (selectedOption === questions[currentQuiz].answer) score++; currentQuiz++; displayCurrentQuiz(); }
+        function submitAnswer() {
+            if (!selectedOption) { alert("보기를 선택해주세요!"); return; }
+            const data = questions[currentQuiz];
+            const isCorrect = selectedOption === data.answer;
+            if (immediateFeedbackMode) {
+                const feedbackDiv = document.getElementById('immediate-feedback'), options = document.querySelectorAll('.option');
+                feedbackDiv.className = isCorrect ? 'feedback correct' : 'feedback incorrect';
+                let feedbackHTML = `<p><strong>${isCorrect ? '정답입니다!' : '오답입니다.'}</strong></p>`;
+                if (!isCorrect) feedbackHTML += `<p>정답: ${data.answer}</p>`;
+                if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
+                feedbackDiv.innerHTML = feedbackHTML;
+                options.forEach(opt => { opt.onclick = null; if (opt.textContent === data.answer) opt.style.borderColor = '#198754'; else if (opt.textContent === selectedOption) opt.style.borderColor = '#dc3545'; });
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.textContent = '다음 문제 →';
+                submitBtn.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
+            } else {
+                if (isCorrect) score++;
+                currentQuiz++;
+                displayCurrentQuiz();
+            }
+        }
+        
+        function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
 
         async function showManagementView() {
             showView('management-view');
@@ -262,7 +296,7 @@
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
         }
         
-        function addOptionField(value = '') { const container = document.getElementById('q-options-container'); const input = document.createElement('input'); input.type = 'text'; input.style.cssText='width:100%;padding:10px;margin-bottom:5px;box-sizing:border-box;'; input.value = value; container.appendChild(input); }
+        function addOptionField(value = '') { const container = document.getElementById('q-options-container'); const input = document.createElement('input'); input.type = 'text'; input.style.cssText='width:100%;padding:10px;margin-bottom:5px;box-sizing:border-box;border:1px solid #ccc;border-radius:5px;'; input.value = value; container.appendChild(input); }
         function populatePartSelect(selectedValue) { const select = document.getElementById('q-part'); select.innerHTML = ''; (currentSubjectData.partOrder || []).forEach(part => { const opt = document.createElement('option'); opt.value = part; opt.textContent = part; if (part === selectedValue) opt.selected = true; select.appendChild(opt); }); }
         
         showView('subject-view');
