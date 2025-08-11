@@ -253,6 +253,8 @@
             document.getElementById('editing-question-id').value = id || '';
             document.getElementById('q-text').value = q.text || '';
             document.getElementById('q-answer').value = q.answer || '';
+            // [추가] 해설 필드 내용 채우기
+            document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
             const optsContainer = document.getElementById('q-options-container');
             optsContainer.innerHTML = '';
@@ -263,10 +265,28 @@
 
         async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
-            const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), partName: document.getElementById('q-part').value, options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean) };
-            if (!data.text || !data.answer || !data.partName || data.options.length < 1) { alert("모든 필드를 입력해주세요."); return; }
-            if (id) { await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); } 
-            else { const subjectRef = db.collection('subjects').doc(currentSubjectId); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 }); t.set(subjectRef.collection('questions').doc(), data); }); currentSubjectData.questionCount++; }
+            const data = { 
+                text: document.getElementById('q-text').value.trim(), 
+                answer: document.getElementById('q-answer').value.trim(),
+                // [추가] 해설 데이터 가져오기
+                explanation: document.getElementById('q-explanation').value.trim(),
+                partName: document.getElementById('q-part').value, 
+                options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean) 
+            };
+            if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
+            
+            // 데이터베이스 저장 로직 (이전과 동일)
+            if (id) { 
+                await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
+            } else { 
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                await db.runTransaction(async t => { 
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+                    t.set(subjectRef.collection('questions').doc(), data); 
+                });
+                currentSubjectData.questionCount++; 
+            }
             showManagementView();
         }
 
