@@ -57,6 +57,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
+        console.log("스크립트 시작!");
+        
         const firebaseConfig = {
   apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
   authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
@@ -67,6 +69,7 @@
 };
         
         const app = firebase.initializeApp(firebaseConfig);
+        console.log("Firebase 초기화 성공!");
         const db = firebase.firestore();
         const auth = firebase.auth();
 
