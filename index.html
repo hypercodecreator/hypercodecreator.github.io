@@ -106,7 +106,7 @@
 
         async function loadQuestionsForSubject() {
             const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
-            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text').get();
             questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             currentQuiz = 0; score = 0; displayCurrentQuiz();
         }
