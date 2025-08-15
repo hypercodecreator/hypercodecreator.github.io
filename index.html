@@ -19,8 +19,13 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
+        #management-actions { display: flex; justify-content: space-between; align-items: center; border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .range-select-container { display: flex; margin-bottom: 10px; }
+        .range-select-container input { flex-grow: 1; margin-right: 10px; }
         .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .question-item input[type="checkbox"] { margin-right: 15px; transform: scale(1.2); }
         .question-item-text { flex-grow: 1; margin-right: 10px; }
+        .question-item-part { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
         .question-item .button { width: auto; padding: 5px 10px; font-size: 0.9em; margin-top: 0; margin-left: 5px;}
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
@@ -39,38 +44,12 @@
         </div>
 
         <div id="subject-view"> <h2>과목 선택</h2> <div id="subject-list"></div> </div>
-        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호 (6자리 이상)</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        
-        <div id="quiz-view" class="hidden">
-            <div class="mode-toggle">
-                <label for="feedback-toggle">즉시 결과 확인</label>
-                <input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)" style="margin-left: 5px;">
-            </div>
-            <h2 id="quiz-header"></h2>
-            <div id="quiz-body"></div>
-            <hr style="margin: 20px 0;">
-            <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
-        </div>
-
-        <div id="management-view" class="hidden">
-            <h2 id="management-header"></h2>
-            <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
-            <div id="question-list-container"></div>
-            <button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button>
-        </div>
-
-        <div id="add-edit-view" class="hidden">
-             <h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id">
-             <div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div>
-             <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
-             <div class="form-group"><label for="q-explanation">해설 (선택 사항)</label><textarea id="q-explanation" rows="3"></textarea></div>
-             <div class="form-group"><label for="q-part">파트</label><select id="q-part" class="form-group"></select></div>
-             <div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" style="width: auto; padding: 5px 10px; font-size: 0.9em;" onclick="addOptionField()">보기 필드 추가</button></div>
-             <button id="save-btn" class="button primary-button">저장</button>
-             <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
-        </div>
+        <div id="quiz-view" class="hidden"><div class="mode-toggle"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div><h2 id="quiz-header"></h2><div id="quiz-body"></div><hr><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
+        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><div class="form-group" style="margin-top: 15px;"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><hr><div id="management-actions" class="hidden"><div><span id="selection-count"></span>개 선택됨</div><div><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
+        <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -87,39 +66,25 @@
   appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
 };
         
-        // Firebase 초기화
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // 전역 변수
-        let currentSubjectId, currentSubjectData;
-        let questions = [], currentQuiz = 0, score = 0, selectedOption = null;
+        let currentSubjectId, currentSubjectData, questions = [], displayedQuestions = [];
         let immediateFeedbackMode = false;
-        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view'];
+        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view'];
 
-        function showView(viewId) {
-            views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId));
-        }
-        
+        function showView(viewId) { views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId)); }
         auth.onAuthStateChanged(user => {
             document.getElementById('logged-in-view').classList.toggle('hidden', !user);
             document.getElementById('logged-out-view').classList.toggle('hidden', !!user);
-            if (user) {
-                document.getElementById('user-email').textContent = `${user.email}님`;
-                loadSubjects();
-            } else {
-                showView('subject-view');
-                document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
-            }
+            if (user) { document.getElementById('user-email').textContent = `${user.email}님`; loadSubjects(); } 
+            else { showView('subject-view'); document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>'; }
         });
         
-        // --- 인증 관련 함수 ---
+        // --- 인증, 과목/퀴즈 풀이 기본 함수 
         async function signUp() { try { const email = document.getElementById('signup-email').value; const password = document.getElementById('signup-password').value; await auth.createUserWithEmailAndPassword(email, password); showView('subject-view'); } catch (error) { alert(error.message); } }
         async function logIn() { try { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; await auth.signInWithEmailAndPassword(email, password); showView('subject-view'); } catch (error) { alert(error.message); } }
-        function logOut() { auth.signOut(); }
-
-        // --- 과목 선택 관련 함수 ---
         async function loadSubjects() {
             const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
             try {
@@ -140,7 +105,6 @@
             loadQuestionsForSubject();
         }
         
-        // --- 퀴즈 풀이 관련 함수 ---
         async function loadQuestionsForSubject() {
             const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
             try {
@@ -194,43 +158,106 @@
         }
         function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
 
-        // --- 문제 관리 관련 함수 ---
+        // --- 문제 관리 고급 함수 ---
         async function showManagementView() {
             showView('management-view');
             document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
-            const container = document.getElementById('question-list-container');
-            container.innerHTML = '로딩 중...';
+            const partFilter = document.getElementById('part-filter');
+            const currentFilterValue = partFilter.value;
+            partFilter.innerHTML = '<option value="all">-- 전체 파트 --</option>';
+            (currentSubjectData.partOrder || []).forEach(part => {
+                const option = document.createElement('option'); option.value = part; option.textContent = part;
+                partFilter.appendChild(option);
+            });
+            partFilter.value = currentFilterValue || 'all';
+            const container = document.getElementById('question-list-container'); container.innerHTML = '로딩 중...';
+            updateSelectionActions();
+            document.getElementById('select-all-checkbox').checked = false;
+
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
             questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            const selectedPart = partFilter.value;
+            displayedQuestions = selectedPart === 'all' ? questions : questions.filter(q => q.partName === selectedPart);
+            
             container.innerHTML = '';
-            questions.forEach(q => {
-                const item = document.createElement('div');
-                item.className = 'question-item';
-                item.innerHTML = `
-                    <span class="question-item-text">${q.fixedId || q.text}</span>
-                    <div>
-                        <button class="button light-button" onclick="showEditForm('${q.id}')">수정</button>
-                        <button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text}')">삭제</button>
-                    </div>`;
+            if (displayedQuestions.length === 0) { container.innerHTML = '<p>해당 파트에 문제가 없습니다.</p>'; return; }
+            
+            displayedQuestions.forEach((q, index) => {
+                const item = document.createElement('div'); item.className = 'question-item';
+                item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" onchange="updateSelectionActions()"><span class="question-item-text">${index + 1}. ${q.text}</span><span class="question-item-part">(${q.partName})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
                 container.appendChild(item);
             });
         }
-        
-        async function deleteQuestion(id, text) {
-            if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까?`)) return;
-            const subjectRef = db.collection('subjects').doc(currentSubjectId);
-            const questionRef = subjectRef.collection('questions').doc(id);
-            try {
-                await db.runTransaction(async t => {
-                    const doc = await t.get(subjectRef);
-                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
-                    t.delete(questionRef);
-                });
-                currentSubjectData.questionCount--;
-                showManagementView();
-            } catch(error) { console.error("Error deleting question: ", error); alert("삭제 중 오류 발생"); }
+
+        function updateSelectionActions() {
+            const selected = document.querySelectorAll('.question-checkbox:checked');
+            const actionsDiv = document.getElementById('management-actions');
+            actionsDiv.classList.toggle('hidden', selected.length === 0);
+            if (!actionsDiv.classList.contains('hidden')) {
+                document.getElementById('selection-count').textContent = selected.length;
+            }
         }
 
+        function toggleSelectAll(checked) {
+            document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = checked);
+            updateSelectionActions();
+        }
+
+        function selectByRange() {
+            const rangeStr = document.getElementById('range-select-input').value;
+            if (!rangeStr.trim()) return;
+            const allCheckboxes = document.querySelectorAll('.question-checkbox');
+            const indicesToSelect = new Set();
+            rangeStr.split(',').forEach(part => {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(num => parseInt(num.trim(), 10));
+                    if (!isNaN(start) && !isNaN(end)) { for (let i = start; i <= end; i++) indicesToSelect.add(i - 1); }
+                } else {
+                    const num = parseInt(part, 10);
+                    if (!isNaN(num)) indicesToSelect.add(num - 1);
+                }
+            });
+            allCheckboxes.forEach((checkbox, index) => { checkbox.checked = indicesToSelect.has(index); });
+            updateSelectionActions();
+        }
+
+        async function deleteSelectedQuestions() {
+            const selected = document.querySelectorAll('.question-checkbox:checked');
+            if (selected.length === 0 || !confirm(`${selected.length}개 삭제?`)) return;
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            const batch = db.batch();
+            selected.forEach(cb => batch.delete(subjectRef.collection('questions').doc(cb.value)));
+            batch.update(subjectRef, { questionCount: firebase.firestore.FieldValue.increment(-selected.length) });
+            await batch.commit();
+            showManagementView();
+        }
+
+        function showMoveDialog() {
+            if (document.querySelectorAll('.question-checkbox:checked').length === 0) { alert('문제 선택 필요'); return; }
+            const select = document.getElementById('target-part');
+            select.innerHTML = '';
+            (currentSubjectData.partOrder || []).forEach(part => {
+                const opt = document.createElement('option');
+                opt.value = part; opt.textContent = part; select.appendChild(opt);
+            });
+            showView('move-question-view');
+        }
+
+        async function executeMove() {
+            const newPartName = document.getElementById('target-part').value;
+            const selected = document.querySelectorAll('.question-checkbox:checked');
+            const batch = db.batch();
+            selected.forEach(cb => {
+                batch.update(db.collection('subjects').doc(currentSubjectId).collection('questions').doc(cb.value), { partName: newPartName });
+            });
+            await batch.commit();
+            alert(`${selected.length}개 문제를 이동했습니다.`);
+            showManagementView();
+        }
+
+        // --- 문제 추가/수정 함수
         function showAddForm() {
             showEditForm(null);
         }
