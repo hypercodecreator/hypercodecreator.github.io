@@ -12,57 +12,64 @@
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
         .light-button { background-color: #f8f9fa; color: #212529; }
+        .danger-button { background-color: #dc3545; color: white; border-color: #dc3545; }
         #auth-container { display: flex; justify-content: flex-end; align-items: center; padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
         #auth-container button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         #auth-container span { font-size: 0.9em; margin-right: auto; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
+        .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .question-item-text { flex-grow: 1; margin-right: 10px; }
+        .question-item .button { width: auto; padding: 5px 10px; font-size: 0.9em; margin-top: 0; margin-left: 5px;}
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
+        .feedback { padding: 10px; margin-top: 15px; border-radius: 5px; }
+        .feedback.correct { background-color: #d1e7dd; color: #0f5132; }
+        .feedback.incorrect { background-color: #f8d7da; color: #842029; }
+        .feedback p { margin: 5px 0; }
+        .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="auth-container">
-            <div id="logged-out-view">
-                <button class="button light-button" onclick="showView('login-view')">로그인</button>
-                <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
-            </div>
-            <div id="logged-in-view" class="hidden">
-                <span id="user-email"></span>
-                <button class="button secondary-button" onclick="logOut()">로그아웃</button>
-            </div>
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
 
-        <div id="subject-view">
-            <h2>과목 선택</h2>
-            <div id="subject-list">
-                <p>로그인 후 이용해주세요.</p>
-            </div>
-        </div>
-
-        <div id="signup-view" class="hidden">
-            <h2>회원가입</h2>
-            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
-            <div class="form-group"><label for="signup-password">비밀번호 (6자리 이상)</label><input type="password" id="signup-password"></div>
-            <button class="button primary-button" onclick="signUp()">회원가입</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-
-        <div id="login-view" class="hidden">
-            <h2>로그인</h2>
-            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
-            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
-            <button class="button primary-button" onclick="logIn()">로그인</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-
+        <div id="subject-view"> <h2>과목 선택</h2> <div id="subject-list"></div> </div>
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호 (6자리 이상)</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        
         <div id="quiz-view" class="hidden">
+            <div class="mode-toggle">
+                <label for="feedback-toggle">즉시 결과 확인</label>
+                <input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)" style="margin-left: 5px;">
+            </div>
             <h2 id="quiz-header"></h2>
             <div id="quiz-body"></div>
             <hr style="margin: 20px 0;">
+            <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
+        </div>
+
+        <div id="management-view" class="hidden">
+            <h2 id="management-header"></h2>
+            <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
+            <div id="question-list-container"></div>
+            <button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button>
+        </div>
+
+        <div id="add-edit-view" class="hidden">
+             <h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id">
+             <div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div>
+             <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
+             <div class="form-group"><label for="q-explanation">해설 (선택 사항)</label><textarea id="q-explanation" rows="3"></textarea></div>
+             <div class="form-group"><label for="q-part">파트</label><select id="q-part" class="form-group"></select></div>
+             <div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" style="width: auto; padding: 5px 10px; font-size: 0.9em;" onclick="addOptionField()">보기 필드 추가</button></div>
+             <button id="save-btn" class="button primary-button">저장</button>
+             <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
         </div>
     </div>
 
@@ -86,8 +93,10 @@
         const auth = firebase.auth();
 
         // 전역 변수
+        let currentSubjectId, currentSubjectData;
         let questions = [], currentQuiz = 0, score = 0, selectedOption = null;
-        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view'];
+        let immediateFeedbackMode = false;
+        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view'];
 
         function showView(viewId) {
             views.forEach(id => document.getElementById(id).classList.toggle('hidden', id !== viewId));
@@ -105,117 +114,187 @@
             }
         });
         
-        async function signUp() {
-            try {
-                const email = document.getElementById('signup-email').value;
-                const password = document.getElementById('signup-password').value;
-                await auth.createUserWithEmailAndPassword(email, password);
-                showView('subject-view');
-            } catch (error) {
-                alert(error.message);
-            }
-        }
+        // --- 인증 관련 함수 ---
+        async function signUp() { try { const email = document.getElementById('signup-email').value; const password = document.getElementById('signup-password').value; await auth.createUserWithEmailAndPassword(email, password); showView('subject-view'); } catch (error) { alert(error.message); } }
+        async function logIn() { try { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; await auth.signInWithEmailAndPassword(email, password); showView('subject-view'); } catch (error) { alert(error.message); } }
+        function logOut() { auth.signOut(); }
 
-        async function logIn() {
-            try {
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-                await auth.signInWithEmailAndPassword(email, password);
-                showView('subject-view');
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-
-        function logOut() {
-            auth.signOut();
-        }
-
+        // --- 과목 선택 관련 함수 ---
         async function loadSubjects() {
-            const listDiv = document.getElementById('subject-list');
-            listDiv.innerHTML = '과목 로딩 중...';
+            const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
             try {
                 const snapshot = await db.collection('subjects').orderBy('name').get();
                 listDiv.innerHTML = '';
-                if(snapshot.empty) {
-                    listDiv.innerHTML = '<p>과목이 없습니다. Firebase에서 과목을 추가해주세요.</p>';
-                    return;
-                }
                 snapshot.forEach(doc => {
-                    const subject = doc.data();
-                    const button = document.createElement('button');
-                    button.textContent = `${subject.name} (${subject.questionCount || 0}문제)`;
-                    button.className = 'button light-button';
-                    button.onclick = () => selectSubject(doc.id, subject);
-                    listDiv.appendChild(button);
+                    const subject = doc.data(); const button = document.createElement('button');
+                    button.textContent = `${subject.name} (${subject.questionCount || 0}문제)`; button.className = 'button light-button';
+                    button.onclick = () => selectSubject(doc.id, subject); listDiv.appendChild(button);
                 });
-            } catch(error) {
-                console.error("Error loading subjects: ", error);
-                listDiv.innerHTML = '<p>과목을 불러오는 중 오류가 발생했습니다.</p>';
-            }
+            } catch(error) { console.error("Error loading subjects: ", error); listDiv.innerHTML = '<p>과목 로딩 중 오류 발생</p>'; }
         }
         
         function selectSubject(id, data) {
+            currentSubjectId = id; currentSubjectData = data;
             showView('quiz-view');
             document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
-            loadQuestionsForSubject(id);
+            loadQuestionsForSubject();
         }
-
-        async function loadQuestionsForSubject(subjectId) {
-            const quizBody = document.getElementById('quiz-body');
-            quizBody.innerHTML = '<p>문제 로딩 중...</p>';
+        
+        // --- 퀴즈 풀이 관련 함수 ---
+        async function loadQuestionsForSubject() {
+            const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
             try {
-                const snapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
+                const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
                 questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                currentQuiz = 0;
-                score = 0;
-                displayCurrentQuiz();
-            } catch(error) {
-                console.error("Error loading questions: ", error);
-                quizBody.innerHTML = '<p>문제를 불러오는 중 오류가 발생했습니다.</p>';
-            }
+                currentQuiz = 0; score = 0; displayCurrentQuiz();
+            } catch(error) { console.error("Error loading questions: ", error); quizBody.innerHTML = '<p>문제 로딩 중 오류 발생</p>'; }
         }
 
         function displayCurrentQuiz() {
-            const quizBody = document.getElementById('quiz-body');
-            selectedOption = null;
+            const quizBody = document.getElementById('quiz-body'); selectedOption = null;
+            document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
+            if (questions.length === 0) { quizBody.innerHTML = "<p>이 과목에 문제가 없습니다.</p>"; return; }
+            if (currentQuiz >= questions.length) { quizBody.innerHTML = `<h2>퀴즈 결과: ${score}/${questions.length}</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
             
-            if (questions.length === 0) {
-                quizBody.innerHTML = "<p>이 과목에 문제가 없습니다.</p>";
-                return;
-            }
-            if (currentQuiz >= questions.length) {
-                quizBody.innerHTML = `<h2>퀴즈 결과: ${score}/${questions.length}</h2><button class="button primary-button" onclick="selectSubject(currentSubjectId, currentSubjectData)">다시 풀기</button>`;
-                return;
-            }
-
             const data = questions[currentQuiz];
             let optionsHTML = '';
-            (data.options || []).forEach(opt => {
-                optionsHTML += `<li class="option">${opt}</li>`;
-            });
+            (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
 
             quizBody.innerHTML = `
                 <div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div>
                 <ul id="options-container" class="options-container">${optionsHTML}</ul>
-                <button id="submit-btn" class="button primary-button">정답 제출</button>
-            `;
+                <div id="immediate-feedback"></div>
+                <button id="submit-btn" class="button primary-button">정답 제출</button>`;
             
             document.querySelectorAll('.option').forEach(li => {
-                li.onclick = () => {
-                    document.querySelector('.option.selected')?.classList.remove('selected');
-                    li.classList.add('selected');
-                    selectedOption = li.textContent;
-                };
+                li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; };
             });
             document.getElementById('submit-btn').onclick = submitAnswer;
         }
 
         function submitAnswer() {
             if (!selectedOption) return alert("보기를 선택해주세요!");
-            if (selectedOption === questions[currentQuiz].answer) score++;
-            currentQuiz++;
-            displayCurrentQuiz();
+            const data = questions[currentQuiz]; const isCorrect = selectedOption === data.answer;
+            if (immediateFeedbackMode) {
+                const feedbackDiv = document.getElementById('immediate-feedback');
+                feedbackDiv.className = isCorrect ? 'feedback correct' : 'feedback incorrect';
+                let feedbackHTML = `<p><strong>${isCorrect ? '정답입니다!' : '오답입니다.'}</strong></p>`;
+                if (!isCorrect) feedbackHTML += `<p>정답: ${data.answer}</p>`;
+                if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
+                feedbackDiv.innerHTML = feedbackHTML;
+                document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; });
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.textContent = '다음 문제 →';
+                submitBtn.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
+            } else {
+                if (isCorrect) score++;
+                currentQuiz++;
+                displayCurrentQuiz();
+            }
+        }
+        function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
+
+        // --- 문제 관리 관련 함수 ---
+        async function showManagementView() {
+            showView('management-view');
+            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+            const container = document.getElementById('question-list-container');
+            container.innerHTML = '로딩 중...';
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            container.innerHTML = '';
+            questions.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.innerHTML = `
+                    <span class="question-item-text">${q.fixedId || q.text}</span>
+                    <div>
+                        <button class="button light-button" onclick="showEditForm('${q.id}')">수정</button>
+                        <button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text}')">삭제</button>
+                    </div>`;
+                container.appendChild(item);
+            });
+        }
+        
+        async function deleteQuestion(id, text) {
+            if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까?`)) return;
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            const questionRef = subjectRef.collection('questions').doc(id);
+            try {
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
+                    t.delete(questionRef);
+                });
+                currentSubjectData.questionCount--;
+                showManagementView();
+            } catch(error) { console.error("Error deleting question: ", error); alert("삭제 중 오류 발생"); }
+        }
+
+        function showAddForm() {
+            showEditForm(null);
+        }
+
+        function showEditForm(id) {
+            const isEditing = !!id;
+            const q = isEditing ? questions.find(q => q.id === id) : {};
+            document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
+            document.getElementById('editing-question-id').value = id || '';
+            document.getElementById('q-text').value = q.text || '';
+            document.getElementById('q-answer').value = q.answer || '';
+            document.getElementById('q-explanation').value = q.explanation || '';
+            populatePartSelect(q.partName);
+            const optsContainer = document.getElementById('q-options-container');
+            optsContainer.innerHTML = '';
+            (q.options || ['', '']).forEach(opt => addOptionField(opt));
+            document.getElementById('save-btn').onclick = () => saveQuestion(id);
+            showView('add-edit-view');
+        }
+
+        async function saveQuestion(id) {
+            const data = {
+                text: document.getElementById('q-text').value.trim(),
+                answer: document.getElementById('q-answer').value.trim(),
+                explanation: document.getElementById('q-explanation').value.trim(),
+                partName: document.getElementById('q-part').value,
+                options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean)
+            };
+            if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
+
+            if (id) {
+                await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
+                alert('문제가 수정되었습니다.');
+            } else {
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+                    t.set(subjectRef.collection('questions').doc(), data);
+                });
+                currentSubjectData.questionCount++;
+                alert('문제가 추가되었습니다.');
+            }
+            showManagementView();
+        }
+
+        function addOptionField(value = '') {
+            const container = document.getElementById('q-options-container');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-group';
+            input.value = value;
+            container.appendChild(input);
+        }
+        function populatePartSelect(selectedValue) {
+            const select = document.getElementById('q-part');
+            select.innerHTML = '';
+            (currentSubjectData.partOrder || []).forEach(part => {
+                const opt = document.createElement('option');
+                opt.value = part;
+                opt.textContent = part;
+                if (part === selectedValue) opt.selected = true;
+                select.appendChild(opt);
+            });
         }
     </script>
 </body>
