@@ -157,8 +157,11 @@
         function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
 
         async function showManagementView() {
-    showView('management-view');
-    document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+            showView('management-view');
+            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+            const container = document.getElementById('question-list-container'); container.innerHTML = '로딩 중...';
+            updateSelectionActions();
+            document.getElementById('select-all-checkbox').checked = false;
 
     // 1. 필터 드롭다운 메뉴 생성
     const partFilter = document.getElementById('part-filter');
@@ -176,8 +179,8 @@
     updateSelectionActions();
     document.getElementById('select-all-checkbox').checked = false;
 
-    const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text').get();
-    questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
+    questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); container.innerHTML = '';
 
     // 2. 선택된 파트에 따라 문제 필터링
     const selectedPart = partFilter.value;
@@ -192,7 +195,7 @@
     // 3. 필터링된 문제 목록만 화면에 표시
     filteredQuestions.forEach((q, index) => {
         const item = document.createElement('div'); item.className = 'question-item';
-        item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" onchange="updateSelectionActions()"><span class="question-item-text">${index + 1}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
+        item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" data-fixed-id="${q.fixedId}" onchange="updateSelectionActions()"><span class="question-item-text">${q.fixedId || '(ID 없음)'}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
         container.appendChild(item);
     });
 }
@@ -260,25 +263,71 @@
 
         async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
-            const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), explanation: document.getElementById('q-explanation').value.trim(), partName: document.getElementById('q-part').value, options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean) };
+            const data = { /* ... 이전과 동일 ... */ };
             if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
-            if (id) { await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); } 
-            else { const subjectRef = db.collection('subjects').doc(currentSubjectId); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 }); t.set(subjectRef.collection('questions').doc(), data); }); currentSubjectData.questionCount++; }
+
+            if (id) { // 수정 모드 (고유 ID는 변경하지 않음)
+                await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
+                alert('문제가 수정되었습니다.');
+            } else { // 추가 모드 (고유 ID 생성)
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                try {
+                    await db.runTransaction(async t => {
+                        const doc = await t.get(subjectRef);
+                        const subjectData = doc.data();
+                        
+                        // 고유 ID 생성
+                        const partCode = subjectData.partCodes[data.partName];
+                        const newCount = (subjectData.partCounters[partCode] || 0) + 1;
+                        const paddedCount = String(newCount).padStart(3, '0');
+                        data.fixedId = `${subjectData.subjectCode}-${partCode}-${paddedCount}`;
+
+                        // 새 문제 저장 및 카운터 업데이트
+                        t.set(subjectRef.collection('questions').doc(), data);
+                        t.update(subjectRef, { 
+                            questionCount: (subjectData.questionCount || 0) + 1,
+                            [`partCounters.${partCode}`]: newCount 
+                        });
+                    });
+                    currentSubjectData.questionCount++;
+                    alert('문제가 추가되었습니다. 고유 ID: ' + data.fixedId);
+                } catch (error) {
+                    console.error("문제 추가 오류:", error);
+                    alert("고유 ID 생성 중 오류가 발생했습니다. 과목 설정에 subjectCode, partCodes, partCounters 필드가 올바르게 추가되었는지 확인해주세요.");
+                    return;
+                }
+            }
             showManagementView();
         }
         
         function selectByRange() {
             const rangeStr = document.getElementById('range-select-input').value; if (!rangeStr.trim()) return;
             const allCheckboxes = document.querySelectorAll('.question-checkbox'); const indicesToSelect = new Set();
+            
+            const selectedPartCode = currentSubjectData.partCodes[document.getElementById('part-filter').value];
+
             const parts = rangeStr.split(',');
             parts.forEach(part => {
                 part = part.trim();
                 if (part.includes('-')) {
                     const [start, end] = part.split('-').map(num => parseInt(num.trim(), 10));
-                    if (!isNaN(start) && !isNaN(end)) { for (let i = start; i <= end; i++) { indicesToSelect.add(i - 1); } }
-                } else { const num = parseInt(part, 10); if (!isNaN(num)) { indicesToSelect.add(num - 1); } }
+                    if (!isNaN(start) && !isNaN(end)) { for (let i = start; i <= end; i++) { indicesToSelect.add(i); } }
+                } else { const num = parseInt(part, 10); if (!isNaN(num)) { indicesToSelect.add(num); } }
             });
-            allCheckboxes.forEach((checkbox, index) => { checkbox.checked = indicesToSelect.has(index); });
+
+            allCheckboxes.forEach(checkbox => {
+                const fixedId = checkbox.dataset.fixedId; // data-fixed-id 속성 사용
+                if (!fixedId) { checkbox.checked = false; return; }
+
+                const idParts = fixedId.split('-');
+                const partCode = idParts[1];
+                const num = parseInt(idParts[2], 10);
+
+                // 현재 필터링된 파트와 일치하는지 확인 (전체 파트 선택 시에는 무시)
+                const partMatches = !selectedPartCode || selectedPartCode === partCode;
+
+                checkbox.checked = indicesToSelect.has(num) && partMatches;
+            });
             updateSelectionActions();
         }
 
