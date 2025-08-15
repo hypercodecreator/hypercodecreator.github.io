@@ -25,7 +25,7 @@
         .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .question-item input[type="checkbox"] { margin-right: 15px; transform: scale(1.2); }
         .question-item-text { flex-grow: 1; margin-right: 10px; }
-        .question-item-part { font-size: 0.8em; color: #6c757d; margin-left: 8px; } /* 파트 이름 표시용 스타일 */
+        .question-item-part { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
         .question-item .button { width: auto; padding: 5px 10px; font-size: 0.9em; margin-top: 0; margin-left: 5px;}
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
@@ -47,16 +47,8 @@
         <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호 (6자리 이상)</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="quiz-view" class="hidden"><div class="mode-toggle"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)" style="margin-left: 5px;"></div><h2 id="quiz-header"></h2><div id="quiz-body"></div><hr style="margin: 20px 0;"><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
-        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div id="management-actions" class="hidden"><div><div id="move-question-view" class="hidden">
-            <h2>선택한 문제 이동</h2>
-            <div class="form-group">
-                <label for="target-part">이동할 파트 선택</label>
-                <select id="target-part" class="form-group"></select>
-            </div>
-            <button class="button primary-button" onclick="executeMove()">이동 실행</button>
-            <button class="button light-button" onclick="showView('management-view')">취소</button>
-        </div>
-        <button class="button secondary-button" style="width:auto;" onclick="showMoveDialog()">선택 항목 이동</button><button class="button danger-button" style="width:auto;" onclick="deleteSelectedQuestions()">선택 항목 삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" style="margin:0 10px 0 0;" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" style="width:auto; margin-top:0;" onclick="selectByRange()">구간 선택</button></div><div style="padding: 5px;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div id="management-actions" class="hidden"><div><span id="selection-count"></span>개 선택됨</div><div><button class="button secondary-button" style="width:auto;" onclick="showMoveDialog()">선택 항목 이동</button><button class="button danger-button" style="width:auto;" onclick="deleteSelectedQuestions()">선택 항목 삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" style="margin:0 10px 0 0;" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" style="width:auto; margin-top:0;" onclick="selectByRange()">구간 선택</button></div><div style="padding: 5px;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트 선택</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
         <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" style="width: auto; padding: 5px 10px; font-size: 0.9em;" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
         <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: 문제 내용을 입력하세요&#10;보기: 보기1, 보기2, 보기3&#10;정답: 보기2&#10;해설: 해설 내용을 입력하세요 (선택 사항)&#10;---&#10;문제: 다음 문제 내용을 입력하세요..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
     </div>
@@ -197,50 +189,24 @@
         }
 
         function showMoveDialog() {
-            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
-            if (selectedCheckboxes.length === 0) {
-                alert('이동할 문제를 하나 이상 선택해주세요.');
-                return;
-            }
-
-            const targetPartSelect = document.getElementById('target-part');
-            targetPartSelect.innerHTML = '';
-            
-            (currentSubjectData.partOrder || []).forEach(part => {
-                const option = document.createElement('option');
-                option.value = part;
-                option.textContent = part;
-                targetPartSelect.appendChild(option);
-            });
-            
+            const selected = document.querySelectorAll('.question-checkbox:checked');
+            if (selected.length === 0) { alert('이동할 문제를 하나 이상 선택해주세요.'); return; }
+            const select = document.getElementById('target-part'); select.innerHTML = '';
+            (currentSubjectData.partOrder || []).forEach(part => { const opt = document.createElement('option'); opt.value = part; opt.textContent = part; select.appendChild(opt); });
             showView('move-question-view');
         }
 
         async function executeMove() {
             const newPartName = document.getElementById('target-part').value;
-            if (!newPartName) {
-                alert('이동할 파트를 선택해주세요.');
-                return;
-            }
-            
-            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            if (!newPartName) { alert('이동할 파트를 선택해주세요.'); return; }
+            const selected = document.querySelectorAll('.question-checkbox:checked');
             const batch = db.batch();
-
-            selectedCheckboxes.forEach(cb => {
-                const questionRef = db.collection('subjects').doc(currentSubjectId).collection('questions').doc(cb.value);
-                batch.update(questionRef, { partName: newPartName });
-            });
-
-            try {
-                await batch.commit();
-                alert(`${selectedCheckboxes.length}개의 문제를 '${newPartName}' 파트로 이동했습니다.`);
-                showManagementView();
-            } catch (error) {
-                console.error("일괄 이동 오류:", error);
-                alert('문제 이동 중 오류가 발생했습니다.');
-            }
+            selected.forEach(cb => { batch.update(db.collection('subjects').doc(currentSubjectId).collection('questions').doc(cb.value), { partName: newPartName }); });
+            await batch.commit();
+            alert(`${selected.length}개의 문제를 '${newPartName}' 파트로 이동했습니다.`);
+            showManagementView();
         }
-        
+
         function showAddForm() { showEditForm(null); }
         function showEditForm(id) {
             const isEditing = !!id, q = isEditing ? questions.find(q => q.id === id) : {};
