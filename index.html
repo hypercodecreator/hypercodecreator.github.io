@@ -151,7 +151,7 @@
             const container = document.getElementById('question-list-container'); container.innerHTML = '로딩 중...';
             updateSelectionActions();
             document.getElementById('select-all-checkbox').checked = false;
-            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text').get();
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
             questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); container.innerHTML = '';
             const selectedPart = document.getElementById('part-filter')?.value || 'all';
             const filteredQuestions = selectedPart === 'all' ? questions : questions.filter(q => q.partName === selectedPart);
