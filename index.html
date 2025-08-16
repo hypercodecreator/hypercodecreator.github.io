@@ -103,7 +103,7 @@
             });
         }
         
-        function selectSubject(id, data) {
+       function selectSubject(id, data) {
             currentSubjectId = id; currentSubjectData = data;
             document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
             showView('quiz-view');
@@ -344,8 +344,9 @@
             await db.runTransaction(async t => {
                 const doc = await t.get(subjectRef); const subjectData = doc.data();
                 const defaultPart = (subjectData.partOrder || ['일반'])[0];
+                let currentCounters = { ...subjectData.partCounters };
                 blocks.forEach(block => {
-                    if (!block.trim()) return; const lines = block.trim().split('\n'); 
+                    if (!block.trim()) return; const lines = block.trim().split('\n');
                     const data = { options: [], partName: defaultPart, text: '', answer: '' };
                     lines.forEach(line => {
                          if (line.toLowerCase().startsWith('문제:')) data.text = line.substring(3).trim();
@@ -353,23 +354,18 @@
                          else if (line.toLowerCase().startsWith('정답:')) data.answer = line.substring(3).trim();
                          else if (line.toLowerCase().startsWith('해설:')) data.explanation = line.substring(3).trim();
                     });
-                    if (data.text && data.answer) { 
+                    if (data.text && data.answer) {
                         const partCode = subjectData.partCodes[data.partName];
                         if(partCode) {
-                            const newCount = (subjectData.partCounters[partCode] || 0) + 1 + count;
+                            const newCount = (currentCounters[partCode] || 0) + 1;
                             data.fixedId = `${subjectData.subjectCode}-${partCode}-${String(newCount).padStart(3, '0')}`;
+                            currentCounters[partCode] = newCount;
                         }
                         t.set(subjectRef.collection('questions').doc(), data); 
                         count++; 
                     }
                 });
-                const finalCounters = { ...subjectData.partCounters };
-                if (finalCounters[subjectData.partCodes[defaultPart]]) {
-                    finalCounters[subjectData.partCodes[defaultPart]] += count;
-                } else {
-                    finalCounters[subjectData.partCodes[defaultPart]] = count;
-                }
-                t.update(subjectRef, { questionCount: (subjectData.questionCount || 0) + count, partCounters: finalCounters });
+                t.update(subjectRef, { questionCount: firebase.firestore.FieldValue.increment(count), partCounters: currentCounters });
             });
             if (count > 0) { currentSubjectData.questionCount += count; alert(`${count}개의 문제가 추가되었습니다.`); showManagementView(); }
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
