@@ -103,7 +103,7 @@
             });
         }
         
-       function selectSubject(id, data) {
+        function selectSubject(id, data) {
             currentSubjectId = id; currentSubjectData = data;
             document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
             showView('quiz-view');
@@ -206,7 +206,7 @@
                 } catch (e) { console.error(`북마크된 문제(${doc.id}) 로딩 실패:`, e); }
             }
         }
-
+        
         async function showManagementView() {
             showView('management-view');
             document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
@@ -237,7 +237,7 @@
             const countSpan = document.getElementById('selection-count');
             actionsDiv.classList.toggle('hidden', selected.length === 0);
             if (!actionsDiv.classList.contains('hidden')) {
-                countSpan.textContent = selected.length > 0 ? `${selected.length}개 선택됨` : '문제 선택되지 않음';
+                countSpan.textContent = `${selected.length}개 선택됨`;
             }
         }
 
@@ -328,7 +328,7 @@
             let visibleIndex = 0;
             allCheckboxes.forEach(checkbox => {
                 const fixedId = checkbox.dataset.fixedId; if (!fixedId) return;
-                const idParts = fixedId.split('-'); const partCode = idParts[1]; const num = parseInt(idParts[2], 10);
+                const idParts = fixedId.split('-'); const partCode = idParts[1];
                 const partMatches = !selectedPartCode || selectedPartCode === partCode;
                 if (partMatches) {
                     if (indicesToSelect.has(visibleIndex + 1)) { checkbox.checked = true; }
