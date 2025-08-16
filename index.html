@@ -19,13 +19,11 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
-        #management-actions { display: flex; justify-content: space-between; align-items: center; border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 8px 12px; border-radius: 5px; margin-bottom: 10px; }
-        #management-actions .button { margin-top: 0; padding: 6px 10px; font-size: 0.9em; }
-        .quiz-question-header { display: flex; align-items: center; justify-content: space-between; }
-        #bookmark-toggle { font-size: 1.5em; cursor: pointer; color: #ffc107; user-select: none; }
         .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .question-item-text { flex-grow: 1; margin-right: 10px; }
-        .question-item-part { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
+        .question-item .button { width: auto; padding: 5px 10px; font-size: 0.9em; margin-top: 0; margin-left: 5px;}
+        .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
+        .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -37,34 +35,36 @@
 
         <div id="subject-view">
             <h2>과목 선택</h2>
-            <button class="button secondary-button hidden" onclick="showBookmarkView()">⭐ 북마크 모아보기</button>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 15px 0;" class="hidden">
             <div id="subject-list"></div>
         </div>
-
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        
         <div id="quiz-view" class="hidden">
-            <div class="quiz-question-header">
-                <h2 id="quiz-header" style="margin: 0;"></h2>
-                <span id="bookmark-toggle">☆</span>
-            </div>
+            <h2 id="quiz-header"></h2>
             <div id="quiz-body"></div>
             <hr style="margin: 20px 0;">
             <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
         </div>
-        
-        <div id="bookmark-view" class="hidden">
-            <h2>⭐ 북마크 모아보기</h2>
-            <div id="bookmark-list-container"></div>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
+
+        <div id="management-view" class="hidden">
+            <h2 id="management-header"></h2>
+            <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
+            <div id="question-list-container" style="margin-top: 15px;"></div>
+            <button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button>
         </div>
 
-        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button></div>
-        <div id="move-question-view" class="hidden"></div>
-        <div id="add-edit-view" class="hidden"></div>
-        <div id="bulk-add-view" class="hidden"></div>
+        <div id="add-edit-view" class="hidden">
+             <h2 id="add-edit-header"></h2>
+             <div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div>
+             <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
+             <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
+             <div class="form-group"><label for="q-part">파트</label><select id="q-part" class="form-group"></select></div>
+             <div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" style="width:auto; padding:5px 10px; font-size:0.9em;" onclick="addOptionField()">보기 필드 추가</button></div>
+             <button id="save-btn" class="button primary-button">저장</button>
+             <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -80,151 +80,166 @@
   messagingSenderId: "1091430877229",
   appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
 };
-        
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let currentSubjectId, currentSubjectData, questions = [], currentQuiz = 0;
-        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view'];
+        let currentSubjectId, currentSubjectData, questions = [], currentQuiz = 0, score = 0, selectedOption = null;
+        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view'];
 
-        function showView(viewId) {
-            views.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.toggle('hidden', id !== viewId);
-            });
-        }
+        function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
         
         auth.onAuthStateChanged(user => {
-            const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('button[onclick="showBookmarkView()"]'), document.querySelector('#subject-view hr')];
-            loggedInElements.forEach(el => el?.classList.toggle('hidden', !user));
+            document.getElementById('logged-in-view').classList.toggle('hidden', !user);
             document.getElementById('logged-out-view').classList.toggle('hidden', !!user);
-            if (user) {
-                document.getElementById('user-email').textContent = `${user.email}님`;
-                loadSubjects();
-            } else {
-                showView('subject-view');
-                document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
-            }
+            if (user) { document.getElementById('user-email').textContent = `${user.email}님`; loadSubjects(); } 
+            else { showView('subject-view'); document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>'; }
         });
         
-        async function signUp() { try { const email = document.getElementById('signup-email').value; const password = document.getElementById('signup-password').value; await auth.createUserWithEmailAndPassword(email, password); showView('subject-view'); } catch (e) { alert(e.message); } }
-        async function logIn() { try { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; await auth.signInWithEmailAndPassword(email, password); showView('subject-view'); } catch (e) { alert(e.message); } }
+        async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
+        async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
 
         async function loadSubjects() {
-            const listDiv = document.getElementById('subject-list');
-            listDiv.innerHTML = '과목 로딩 중...';
-            try {
-                const snapshot = await db.collection('subjects').orderBy('name').get();
-                listDiv.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const subject = doc.data(); const button = document.createElement('button');
-                    button.textContent = `${subject.name} (${subject.questionCount || 0}문제)`; button.className = 'button light-button';
-                    button.onclick = () => selectSubject(doc.id, subject);
-                    listDiv.appendChild(button);
-                });
-            } catch (e) {
-                console.error("Error loading subjects:", e);
-                listDiv.innerHTML = '<p>과목 로딩 중 오류가 발생했습니다.</p>';
-            }
+            const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
+            const snapshot = await db.collection('subjects').orderBy('name').get();
+            listDiv.innerHTML = '';
+            snapshot.forEach(doc => {
+                const subject = doc.data(); const button = document.createElement('button');
+                button.textContent = `${subject.name} (${subject.questionCount || 0}문제)`; button.className = 'button light-button';
+                button.onclick = () => selectSubject(doc.id, subject);
+                listDiv.appendChild(button);
+            });
         }
         
         function selectSubject(id, data) {
             currentSubjectId = id; currentSubjectData = data;
-            document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
             showView('quiz-view');
+            document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
             loadQuestionsForSubject();
         }
 
-        async function loadQuestionsForSubject(targetQuestionId = null) {
-            const quizBody = document.getElementById('quiz-body');
-            quizBody.innerHTML = '<p>문제 로딩 중...</p>';
-            try {
-                const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
-                questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                currentQuiz = targetQuestionId ? questions.findIndex(q => q.id === targetQuestionId) : 0;
-                if (currentQuiz === -1) currentQuiz = 0;
-                displayCurrentQuiz();
-            } catch (e) {
-                console.error("Error loading questions:", e);
-                quizBody.innerHTML = '<p>문제 로딩 중 오류가 발생했습니다.</p>';
-            }
+        async function loadQuestionsForSubject() {
+            const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            currentQuiz = 0; score = 0;
+            displayCurrentQuiz();
         }
 
-        async function displayCurrentQuiz() {
+        function displayCurrentQuiz() {
             const quizBody = document.getElementById('quiz-body');
             if (questions.length === 0) { quizBody.innerHTML = "<p>이 과목에 문제가 없습니다.</p>"; return; }
-            if (currentQuiz >= questions.length) { quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
+            if (currentQuiz >= questions.length) { quizBody.innerHTML = `<h2>퀴즈 결과: ${score}/${questions.length}</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
             
             const data = questions[currentQuiz];
-            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div><ul id="options-container"></ul>`;
-            
-            const optsEl = document.getElementById('options-container');
-            (data.options || []).forEach(opt => {
-                const li = document.createElement('li'); li.className = 'option'; li.textContent = opt;
-                li.onclick = () => { /* ... */ };
-                optsEl.appendChild(li);
+            let optionsHTML = '';
+            (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
+            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div><ul class="options-container">${optionsHTML}</ul><button class="button primary-button" onclick="submitAnswer()">정답 제출</button>`;
+            document.querySelectorAll('.option').forEach(li => {
+                li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; };
             });
-
-            const bookmarkToggle = document.getElementById('bookmark-toggle');
-            const isBookmarked = await checkBookmarkStatus(data.id);
-            bookmarkToggle.textContent = isBookmarked ? '★' : '☆';
-            bookmarkToggle.onclick = () => toggleBookmark(data.id);
         }
 
-        async function checkBookmarkStatus(questionId) {
-            const user = auth.currentUser;
-            if (!user) return false;
-            const bookmarkRef = db.collection('users').doc(user.uid).collection('bookmarks').doc(questionId);
-            const doc = await bookmarkRef.get();
-            return doc.exists;
-        }
+        function submitAnswer() { if (selectedOption === questions[currentQuiz].answer) score++; currentQuiz++; displayCurrentQuiz(); }
 
-        async function toggleBookmark(questionId) {
-            const user = auth.currentUser;
-            if (!user) return;
-            const bookmarkToggle = document.getElementById('bookmark-toggle');
-            const bookmarkRef = db.collection('users').doc(user.uid).collection('bookmarks').doc(questionId);
-            const isBookmarked = await checkBookmarkStatus(questionId);
-            if (isBookmarked) {
-                await bookmarkRef.delete();
-                bookmarkToggle.textContent = '☆';
-            } else {
-                await bookmarkRef.set({
-                    subjectId: currentSubjectId,
-                    subjectName: currentSubjectData.name,
-                    addedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                bookmarkToggle.textContent = '★';
-            }
-        }
-
-        async function showBookmarkView() {
-            showView('bookmark-view');
-            const container = document.getElementById('bookmark-list-container');
-            container.innerHTML = '북마크 로딩 중...';
-            const user = auth.currentUser;
-            if (!user) return;
-            const snapshot = await db.collection('users').doc(user.uid).collection('bookmarks').orderBy('addedAt', 'desc').get();
-            if (snapshot.empty) { container.innerHTML = '<p>북마크한 문제가 없습니다.</p>'; return; }
+        // --- [복원됨] 문제 관리 관련 함수 ---
+        async function showManagementView() {
+            showView('management-view');
+            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+            const container = document.getElementById('question-list-container');
+            container.innerHTML = '로딩 중...';
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+            questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             container.innerHTML = '';
-            for (const doc of snapshot.docs) {
-                const bookmark = doc.data();
-                const questionDoc = await db.collection('subjects').doc(bookmark.subjectId).collection('questions').doc(doc.id).get();
-                if (questionDoc.exists) {
-                    const question = questionDoc.data();
-                    const item = document.createElement('div');
-                    item.className = 'question-item';
-                    item.style.cursor = 'pointer';
-                    item.onclick = () => {
-                        selectSubject(bookmark.subjectId, { name: bookmark.subjectName, partOrder: [] });
-                        loadQuestionsForSubject(doc.id);
-                    };
-                    item.innerHTML = `<span class="question-item-text">${question.fixedId || ''} ${question.text}</span><span class="question-item-part">(${bookmark.subjectName})</span>`;
-                    container.appendChild(item);
-                }
+            questions.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.innerHTML = `
+                    <span class="question-item-text">${q.text}</span>
+                    <div>
+                        <button class="button light-button" onclick="showEditForm('${q.id}')">수정</button>
+                        <button class="button danger-button" onclick="deleteQuestion('${q.id}', '${q.text}')">삭제</button>
+                    </div>`;
+                container.appendChild(item);
+            });
+        }
+
+        async function deleteQuestion(id, text) {
+            if (!confirm(`'${text}' 문제를 정말 삭제하시겠습니까?`)) return;
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            const questionRef = subjectRef.collection('questions').doc(id);
+            try {
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
+                    t.delete(questionRef);
+                });
+                currentSubjectData.questionCount--;
+                showManagementView();
+            } catch(error) { alert("삭제 중 오류 발생"); }
+        }
+
+        function showAddForm() { showEditForm(null); }
+        function showEditForm(id) {
+            const isEditing = !!id;
+            const q = isEditing ? questions.find(q => q.id === id) : {};
+            document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
+            document.getElementById('save-btn').onclick = () => saveQuestion(id); // saveQuestion에 id 전달
+            document.getElementById('editing-question-id').value = id || '';
+            document.getElementById('q-text').value = q.text || '';
+            document.getElementById('q-answer').value = q.answer || '';
+            document.getElementById('q-explanation').value = q.explanation || '';
+            populatePartSelect(q.partName);
+            const optsContainer = document.getElementById('q-options-container');
+            optsContainer.innerHTML = '';
+            (q.options || ['', '']).forEach(opt => addOptionField(opt));
+            showView('add-edit-view');
+        }
+
+        async function saveQuestion(id) {
+            const data = {
+                text: document.getElementById('q-text').value.trim(),
+                answer: document.getElementById('q-answer').value.trim(),
+                explanation: document.getElementById('q-explanation').value.trim(),
+                partName: document.getElementById('q-part').value,
+                options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean)
+            };
+            if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수입니다."); return; }
+
+            if (id) {
+                await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
+                alert('문제가 수정되었습니다.');
+            } else {
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+                    t.set(subjectRef.collection('questions').doc(), data);
+                });
+                currentSubjectData.questionCount++;
+                alert('문제가 추가되었습니다.');
             }
+            showManagementView();
+        }
+
+        function addOptionField(value = '') {
+            const container = document.getElementById('q-options-container');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-group';
+            input.value = value;
+            container.appendChild(input);
+        }
+        function populatePartSelect(selectedValue) {
+            const select = document.getElementById('q-part');
+            select.innerHTML = '';
+            (currentSubjectData.partOrder || []).forEach(part => {
+                const opt = document.createElement('option');
+                opt.value = part; opt.textContent = part;
+                if (part === selectedValue) opt.selected = true;
+                select.appendChild(opt);
+            });
         }
     </script>
 </body>
