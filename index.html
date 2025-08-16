@@ -50,7 +50,7 @@
         <div id="bookmark-view" class="hidden"><h2>⭐ 북마크 모아보기</h2><div id="bookmark-list-container"></div><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><div><span id="selection-count"></span>개 선택됨</div><div><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><div><span id="selection-count"></span></div><div><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
         <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
         <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
         <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
@@ -224,9 +224,9 @@
             displayedQuestions = selectedPart === 'all' ? questions : questions.filter(q => q.partName === selectedPart);
             container.innerHTML = '';
             if (displayedQuestions.length === 0) { container.innerHTML = '<p>해당 파트에 문제가 없습니다.</p>'; }
-            displayedQuestions.forEach(q => {
+            displayedQuestions.forEach((q, index) => {
                 const item = document.createElement('div'); item.className = 'question-item';
-                item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" data-fixed-id="${q.fixedId}" onchange="updateSelectionActions()"><span class="question-item-text">${q.fixedId || '(ID 없음)'}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
+                item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" data-fixed-id="${q.fixedId}" onchange="updateSelectionActions()"><span class="question-item-text">${index + 1}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
                 container.appendChild(item);
             });
         }
@@ -234,9 +234,10 @@
         function updateSelectionActions() {
             const selected = document.querySelectorAll('.question-checkbox:checked');
             const actionsDiv = document.getElementById('management-actions');
+            const countSpan = document.getElementById('selection-count');
             actionsDiv.classList.toggle('hidden', selected.length === 0);
             if (!actionsDiv.classList.contains('hidden')) {
-                document.getElementById('selection-count').textContent = selected.length;
+                countSpan.textContent = selected.length > 0 ? `${selected.length}개 선택됨` : '문제 선택되지 않음';
             }
         }
 
@@ -287,75 +288,30 @@
         }
 
         async function saveQuestion() {
-    const id = document.getElementById('editing-question-id').value;
-    const data = {
-        text: document.getElementById('q-text').value.trim(),
-        answer: document.getElementById('q-answer').value.trim(),
-        explanation: document.getElementById('q-explanation').value.trim(),
-        partName: document.getElementById('q-part').value,
-        options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean)
-    };
-
-    if (!data.text || !data.answer || !data.partName) {
-        alert("문제, 정답, 파트는 필수 항목입니다.");
-        return;
-    }
-
-    if (id) { // 수정 모드
-        await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
-        alert('문제가 수정되었습니다.');
-    } else { // 추가 모드
-        const subjectRef = db.collection('subjects').doc(currentSubjectId);
-        try {
-            await db.runTransaction(async t => {
-                const doc = await t.get(subjectRef);
-                if (!doc.exists) {
-                    throw new Error("치명적 오류: 과목 문서를 찾을 수 없습니다!");
-                }
-                const subjectData = doc.data();
-
-                // 1. partCodes 필드 확인
-                if (!subjectData.partCodes) {
-                    throw new Error("Firestore 데이터 오류: 'partCodes' 필드가 없습니다.");
-                }
-                const partCode = subjectData.partCodes[data.partName];
-                if (!partCode) {
-                    throw new Error(`'${data.partName}'에 대한 파트 코드를 'partCodes'에서 찾을 수 없습니다.`);
-                }
-
-                // 2. partCounters 필드 확인
-                if (!subjectData.partCounters) {
-                    throw new Error("Firestore 데이터 오류: 'partCounters' 필드가 없습니다.");
-                }
-                const newCount = (subjectData.partCounters[partCode] || 0) + 1;
-                
-                // 3. subjectCode 필드 확인
-                if (!subjectData.subjectCode) {
-                    throw new Error("Firestore 데이터 오류: 'subjectCode' 필드가 없습니다.");
-                }
-                const paddedCount = String(newCount).padStart(3, '0');
-                data.fixedId = `${subjectData.subjectCode}-${partCode}-${paddedCount}`;
-                
-                // Firestore 업데이트
-                t.set(subjectRef.collection('questions').doc(), data);
-                t.update(subjectRef, {
-                    questionCount: firebase.firestore.FieldValue.increment(1),
-                    [`partCounters.${partCode}`]: newCount
-                });
-            });
-
-            currentSubjectData.questionCount++;
-            alert('문제가 추가되었습니다. 고유 ID: ' + data.fixedId);
-
-        } catch (error) {
-            console.error("문제 추가 오류:", error);
-            // 더 상세한 오류 메시지를 사용자에게 보여줍니다.
-            alert("고유 ID 생성 중 오류가 발생했습니다:\n" + error.message);
-            return;
+            const id = document.getElementById('editing-question-id').value;
+            const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), explanation: document.getElementById('q-explanation').value.trim(), partName: document.getElementById('q-part').value, options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean) };
+            if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
+            if (id) { await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); alert('문제가 수정되었습니다.'); } 
+            else { 
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                try {
+                    await db.runTransaction(async t => {
+                        const doc = await t.get(subjectRef);
+                        const subjectData = doc.data();
+                        const partCode = subjectData.partCodes[data.partName];
+                        if (!partCode) throw new Error(`'${data.partName}'에 해당하는 파트 코드가 없습니다.`);
+                        const newCount = (subjectData.partCounters[partCode] || 0) + 1;
+                        const paddedCount = String(newCount).padStart(3, '0');
+                        data.fixedId = `${subjectData.subjectCode}-${partCode}-${paddedCount}`;
+                        t.set(subjectRef.collection('questions').doc(), data);
+                        t.update(subjectRef, { questionCount: firebase.firestore.FieldValue.increment(1), [`partCounters.${partCode}`]: newCount });
+                    });
+                    currentSubjectData.questionCount++;
+                    alert('문제가 추가되었습니다. 고유 ID: ' + data.fixedId);
+                } catch (error) { console.error("문제 추가 오류:", error); alert("고유 ID 생성 중 오류가 발생했습니다."); return; }
+            }
+            showManagementView();
         }
-    }
-    showManagementView();
-}
         
         function selectByRange() {
             const rangeStr = document.getElementById('range-select-input').value; if (!rangeStr.trim()) return;
