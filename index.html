@@ -21,9 +21,11 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
         #management-actions { display: flex; justify-content: space-between; align-items: center; border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 8px 12px; border-radius: 5px; margin-bottom: 10px; }
         #management-actions .button { margin-top: 0; padding: 6px 10px; font-size: 0.9em; }
-        .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .quiz-question-header { display: flex; align-items: center; justify-content: space-between; }
         #bookmark-toggle { font-size: 1.5em; cursor: pointer; color: #ffc107; user-select: none; }
+        .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .question-item-text { flex-grow: 1; margin-right: 10px; }
+        .question-item-part { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -57,8 +59,8 @@
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로 돌아가기</button>
         </div>
 
-        <div id="signup-view" class="hidden"></div>
-        <div id="login-view" class="hidden"></div>
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="management-view" class="hidden"></div>
         <div id="move-question-view" class="hidden"></div>
         <div id="add-edit-view" class="hidden"></div>
@@ -89,7 +91,7 @@
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
         
         auth.onAuthStateChanged(user => {
-            const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('button[onclick="showBookmarkView()"]'), document.querySelector('hr.hidden')];
+            const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('button[onclick="showBookmarkView()"]'), document.querySelector('#subject-view hr')];
             loggedInElements.forEach(el => el?.classList.toggle('hidden', !user));
             document.getElementById('logged-out-view').classList.toggle('hidden', !!user);
             if (user) { document.getElementById('user-email').textContent = `${user.email}님`; loadSubjects(); } 
@@ -135,12 +137,12 @@
             } catch(error) { console.error("Error loading questions: ", error); quizBody.innerHTML = '<p>문제 로딩 중 오류 발생</p>'; }
         }
 
-        function displayCurrentQuiz() {
-            const quizBody = document.getElementById('quiz-body'); selectedOption = null;
+        async function displayCurrentQuiz() {
+            const quizBody = document.getElementById('quiz-body');
             document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
             if (questions.length === 0) { quizBody.innerHTML = "<p>이 과목에 문제가 없습니다.</p>"; return; }
             if (currentQuiz >= questions.length) { quizBody.innerHTML = `<h2>퀴즈 결과: ${score}/${questions.length}</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
-            
+            const data = questions[currentQuiz];
            
             let optionsHTML = '';
             (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
@@ -155,9 +157,10 @@
                 li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; };
             });
             document.getElementById('submit-btn').onclick = submitAnswer;
+            
             // 북마크 상태 확인 및 UI 업데이트
             const bookmarkToggle = document.getElementById('bookmark-toggle');
-            const isBookmarked = await checkBookmarkStatus(data.id);
+            const isBookmarked = await checkBookmarkStatus(data.id); // await 사용
             bookmarkToggle.textContent = isBookmarked ? '★' : '☆';
             bookmarkToggle.onclick = () => toggleBookmark(data.id);
         }
@@ -184,7 +187,7 @@
         }
         function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
 
-        // --- 북마크 기능 ---
+        // --- 북마크 신규 기능 ---
         async function checkBookmarkStatus(questionId) {
             const user = auth.currentUser;
             if (!user) return false;
@@ -198,7 +201,7 @@
             if (!user) return;
             const bookmarkToggle = document.getElementById('bookmark-toggle');
             const bookmarkRef = db.collection('users').doc(user.uid).collection('bookmarks').doc(questionId);
-            const isBookmarked = await checkBookmarkStatus(questionId);
+            const isBookmarked = await checkBookmarkStatus(questionId); // await 사용
             if (isBookmarked) {
                 await bookmarkRef.delete();
                 bookmarkToggle.textContent = '☆';
@@ -214,9 +217,9 @@
 
         async function showBookmarkView() {
             showView('bookmark-view');
-            const user = auth.currentUser;
             const container = document.getElementById('bookmark-list-container');
             container.innerHTML = '북마크 로딩 중...';
+            const user = auth.currentUser;
             if (!user) return;
             const snapshot = await db.collection('users').doc(user.uid).collection('bookmarks').orderBy('addedAt', 'desc').get();
             if (snapshot.empty) { container.innerHTML = '<p>북마크한 문제가 없습니다.</p>'; return; }
