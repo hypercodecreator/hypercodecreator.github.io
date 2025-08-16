@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>나만의 CBT</title>
     <style>
         body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #212529; }
@@ -20,7 +20,6 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
         #management-actions { display: flex; justify-content: space-between; align-items: center; border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 8px 12px; border-radius: 5px; margin-bottom: 10px; }
-        #management-actions .button-group { display: flex; gap: 5px; }
         #management-actions .button { margin-top: 0; padding: 6px 10px; font-size: 0.9em; }
         .quiz-question-header { display: flex; align-items: center; justify-content: space-between; }
         #bookmark-toggle { font-size: 1.5em; cursor: pointer; color: #ffc107; user-select: none; }
@@ -38,32 +37,24 @@
         .feedback.incorrect { background-color: #f8d7da; color: #842029; }
         .feedback p { margin: 5px 0; }
         .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
-        .confidence-buttons button { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="auth-container"></div>
-        <div id="subject-view"></div>
-        <div id="quiz-view" class="hidden">
-            <div class="mode-toggle"></div>
-            <div class="quiz-question-header"></div>
-            <div id="quiz-body"></div>
-            <hr>
-            <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        <div id="auth-container">
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        <div id="management-view" class="hidden">
-            <h2 id="management-header"></h2>
-            <div id="management-actions" class="hidden">
-                <span id="selection-count"></span>
-                <div class="button-group">
-                    <button class="button secondary-button" onclick="showMoveDialog()">이동</button>
-                    <button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button>
-                </div>
-            </div>
-            </div>
-        </div>
+        <div id="subject-view"><h2>과목 선택</h2><button class="button secondary-button hidden" onclick="showBookmarkView()">⭐ 북마크 모아보기</button><hr style="border:none;border-top:1px solid #eee;margin:15px 0;" class="hidden"><div id="subject-list"></div></div>
+        <div id="quiz-view" class="hidden"><div class="quiz-question-header"><h2 id="quiz-header" style="margin:0;"></h2><span id="bookmark-toggle">☆</span></div><div class="mode-toggle" style="margin-top:10px;"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div><div id="quiz-body"></div><hr style="margin:20px 0;"><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
+        <div id="bookmark-view" class="hidden"><h2>⭐ 북마크 모아보기</h2><div id="bookmark-list-container"></div><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><div><span id="selection-count"></span></div><div><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
+        <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
+        <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -157,36 +148,19 @@
         // --- 퀴즈 풀이 관련 함수 ---
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요!"); return; }
-            const data = questions[currentQuiz];
-            const isCorrect = selectedOption === data.answer;
+            const data = questions[currentQuiz]; const isCorrect = selectedOption === data.answer;
             if (immediateFeedbackMode) {
                 const feedbackDiv = document.getElementById('immediate-feedback');
-                let feedbackHTML = '';
-                if (isCorrect) {
-                    feedbackDiv.className = 'feedback correct';
-                    feedbackHTML = `<p><strong>정답입니다!</strong></p>
-                                    <p>이 문제를 얼마나 확실하게 알고 있었나요?</p>
-                                    <div class="confidence-buttons">
-                                        <button class="button light-button" onclick="recordConfidence('${data.id}', 'confident')">확실함</button>
-                                        <button class="button light-button" onclick="recordConfidence('${data.id}', 'unsure')">애매함</button>
-                                        <button class="button light-button" onclick="recordConfidence('${data.id}', 'guess')">찍음</button>
-                                    </div>`;
-                } else {
-                    feedbackDiv.className = 'feedback incorrect';
-                    feedbackHTML = `<p><strong>오답입니다.</strong></p><p>정답: ${data.answer}</p>`;
-                    if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
-                }
+                feedbackDiv.className = isCorrect ? 'feedback correct' : 'feedback incorrect';
+                let feedbackHTML = `<p><strong>${isCorrect ? '정답입니다!' : '오답입니다.'}</strong></p>`;
+                if (!isCorrect) feedbackHTML += `<p>정답: ${data.answer}</p>`;
+                if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
                 feedbackDiv.innerHTML = feedbackHTML;
-                
-                document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; });
+                document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; if (opt.textContent === data.answer) opt.style.borderColor = '#198754'; else if (opt.textContent === selectedOption) opt.style.borderColor = '#dc3545'; });
                 const submitBtn = document.getElementById('submit-btn');
                 submitBtn.textContent = '다음 문제 →';
                 submitBtn.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
-            } else {
-                if (isCorrect) score++;
-                currentQuiz++;
-                displayCurrentQuiz();
-            }
+            } else { if (isCorrect) score++; currentQuiz++; displayCurrentQuiz(); }
         }
         
         function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
@@ -253,45 +227,18 @@
             if (displayedQuestions.length === 0) { container.innerHTML = '<p>해당 파트에 문제가 없습니다.</p>'; }
             displayedQuestions.forEach((q, index) => {
                 const item = document.createElement('div'); item.className = 'question-item';
-                item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" data-fixed-id="${q.fixedId}" onchange="updateSelectionActions()"><span class="question-item-text">${index + 1}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
+                item.innerHTML = `<input type="checkbox" class="question-checkbox" value="${q.id}" data-fixed-id="${q.fixedId}" onchange="updateSelectionActions()"><span class="question-item-text">${q.fixedId || `(임시 ${index + 1})`}. ${q.text}</span><span class="question-item-part">(${q.partName || '파트 없음'})</span><div><button class="button light-button" onclick="showEditForm('${q.id}')">수정</button></div>`;
                 container.appendChild(item);
             });
         }
 
-        // --- 문제 관리 관련 함수 ---
         function updateSelectionActions() {
             const selected = document.querySelectorAll('.question-checkbox:checked');
             const actionsDiv = document.getElementById('management-actions');
             const countSpan = document.getElementById('selection-count');
-            
             actionsDiv.classList.toggle('hidden', selected.length === 0);
-            
-            if (selected.length > 0) {
+            if (!actionsDiv.classList.contains('hidden')) {
                 countSpan.textContent = `${selected.length}개 선택됨`;
-            } else {
-                // 선택된 항목이 없을 때의 처리 (버그 수정)
-                document.getElementById('select-all-checkbox').checked = false;
-            }
-        }
-
-        // --- 메타인지 신규 기능 ---
-        async function recordConfidence(questionId, level) {
-            const user = auth.currentUser;
-            if (!user) return;
-            
-            const confidenceRef = db.collection('users').doc(user.uid).collection('confidenceRatings').doc(questionId);
-            try {
-                await confidenceRef.set({
-                    level: level,
-                    subjectId: currentSubjectId,
-                    partName: questions[currentQuiz].partName,
-                    ratedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                // 피드백 버튼들을 비활성화하거나 다음 문제로 넘어가는 로직
-                document.querySelector('.confidence-buttons').innerHTML = `<p><em>자신감도를 기록했습니다.</em></p>`;
-            } catch(e) {
-                console.error("자신감도 기록 오류:", e);
-                alert('자신감도 기록 중 오류가 발생했습니다.');
             }
         }
 
@@ -326,7 +273,7 @@
             showManagementView();
         }
 
-        function showAddForm() { showEditForm(null); }
+         function showAddForm() { showEditForm(null); }
         function showEditForm(id) {
             const isEditing = !!id, q = isEditing ? questions.find(q => q.id === id) : {};
             document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
@@ -385,7 +332,8 @@
                 const idParts = fixedId.split('-'); const partCode = idParts[1];
                 const partMatches = !selectedPartCode || selectedPartCode === partCode;
                 if (partMatches) {
-                    if (indicesToSelect.has(visibleIndex + 1)) { checkbox.checked = true; }
+                    const numInPart = parseInt(idParts[2], 10);
+                    if (indicesToSelect.has(numInPart)) { checkbox.checked = true; }
                     visibleIndex++;
                 }
             });
