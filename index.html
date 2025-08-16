@@ -117,24 +117,24 @@
         }
         
         function selectSubject(id, data) {
-            currentSubjectId = id; currentSubjectData = data;
-            showView('quiz-view');
-            document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
-            loadQuestionsForSubject();
-        }
+    currentSubjectId = id; currentSubjectData = data;
+    document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
+    showView('quiz-view'); 
+    loadQuestionsForSubject(); // targetQuestionId 없이 호출하면 첫 문제부터 시작
+}
         
-        async function loadQuestionsForSubject() {
-            const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
-            const data = questions[currentQuiz];
-            const bookmarkToggle = document.getElementById('bookmark-toggle');
-            const isBookmarked = await checkBookmarkStatus(data.id);
-            bookmarkToggle.textContent = isBookmarked ? '★' : '☆';
-            bookmarkToggle.onclick = () => toggleBookmark(data.id);
-            try {
-                const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
-                questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                currentQuiz = 0; score = 0; displayCurrentQuiz();
-            } catch(error) { console.error("Error loading questions: ", error); quizBody.innerHTML = '<p>문제 로딩 중 오류 발생</p>'; }
+        async function loadQuestionsForSubject(targetQuestionId = null) { // targetQuestionId 파라미터 추가
+    const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
+    const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
+    questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    score = 0;
+    // 목표 문제 ID가 있으면 해당 문제의 순번을, 없으면 0번(첫 문제)으로 설정
+    currentQuiz = targetQuestionId ? questions.findIndex(q => q.id === targetQuestionId) : 0;
+    if (currentQuiz === -1) currentQuiz = 0; // 혹시 못 찾으면 첫 문제로
+
+    displayCurrentQuiz();
+} catch(error) { console.error("Error loading questions: ", error); quizBody.innerHTML = '<p>문제 로딩 중 오류 발생</p>'; }
         }
 
         async function displayCurrentQuiz() {
@@ -216,48 +216,38 @@
         }
 
         async function showBookmarkView() {
-            showView('bookmark-view');
-            const container = document.getElementById('bookmark-list-container');
-            container.innerHTML = '북마크 로딩 중...';
-            const user = auth.currentUser;
-            if (!user) return;
-            const snapshot = await db.collection('users').doc(user.uid).collection('bookmarks').orderBy('addedAt', 'desc').get();
-            if (snapshot.empty) { container.innerHTML = '<p>북마크한 문제가 없습니다.</p>'; return; }
-            container.innerHTML = '';
-            for (const doc of snapshot.docs) {
-                const bookmark = doc.data();
-                const questionDoc = await db.collection('subjects').doc(bookmark.subjectId).collection('questions').doc(doc.id).get();
-                if (questionDoc.exists) {
-                    const question = questionDoc.data();
-                    const item = document.createElement('div');
-                    item.className = 'question-item';
-                    item.innerHTML = `<span class="question-item-text">${question.fixedId || ''} ${question.text}</span><span class="question-item-part">(${bookmark.subjectName})</span>`;
-                    container.appendChild(item);
-                }
-            }
-        }
+    showView('bookmark-view');
+    const user = auth.currentUser;
+    const container = document.getElementById('bookmark-list-container');
+    container.innerHTML = '북마크 로딩 중...';
+    if (!user) { container.innerHTML = '<p>로그인 후 사용 가능합니다.</p>'; return; }
 
-        async function showBookmarkView() {
-            showView('bookmark-view');
-            const user = auth.currentUser;
-            const container = document.getElementById('bookmark-list-container');
-            container.innerHTML = '북마크 로딩 중...';
-            if (!user) return;
-            const snapshot = await db.collection('users').doc(user.uid).collection('bookmarks').orderBy('addedAt', 'desc').get();
-            if (snapshot.empty) { container.innerHTML = '<p>북마크한 문제가 없습니다.</p>'; return; }
-            container.innerHTML = '';
-            for (const doc of snapshot.docs) {
-                const bookmark = doc.data();
-                const questionDoc = await db.collection('subjects').doc(bookmark.subjectId).collection('questions').doc(doc.id).get();
-                if (questionDoc.exists) {
-                    const question = questionDoc.data();
-                    const item = document.createElement('div');
-                    item.className = 'question-item';
-                    item.innerHTML = `<span class="question-item-text">${question.fixedId || ''} ${question.text}</span><span class="question-item-part">(${bookmark.subjectName})</span>`;
-                    container.appendChild(item);
-                }
-            }
+    const snapshot = await db.collection('users').doc(user.uid).collection('bookmarks').orderBy('addedAt', 'desc').get();
+    if (snapshot.empty) { container.innerHTML = '<p>북마크한 문제가 없습니다.</p>'; return; }
+
+    container.innerHTML = '';
+    for (const doc of snapshot.docs) {
+        const bookmark = doc.data();
+        const questionDoc = await db.collection('subjects').doc(bookmark.subjectId).collection('questions').doc(doc.id).get();
+
+        if (questionDoc.exists) {
+            const question = questionDoc.data();
+            const item = document.createElement('div');
+            item.className = 'question-item';
+            item.style.cursor = 'pointer'; // 클릭 가능하게 커서 변경
+            item.onclick = () => { // 클릭 이벤트 추가
+                // 클릭 시 해당 과목과 문제로 바로 점프
+                selectSubject(bookmark.subjectId, { name: bookmark.subjectName });
+                loadQuestionsForSubject(doc.id);
+            };
+            item.innerHTML = `
+                <span class="question-item-text">${question.fixedId || '(ID 없음)'}. ${question.text}</span>
+                <span class="question-item-part">(${bookmark.subjectName})</span>
+            `;
+            container.appendChild(item);
         }
+    }
+}
 
         function updateSelectionActions() {
             const selected = document.querySelectorAll('.question-checkbox:checked');
