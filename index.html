@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #212529; }
         .container { max-width: 700px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
+        .hidden { display: none !important; } /* [수정] !important를 추가하여 다른 스타일을 덮어쓰고 항상 숨겨지도록 보장합니다. */
         .button { width: 100%; padding: 12px; font-size: 1.1em; border-radius: 5px; cursor: pointer; margin-top: 10px; border: 1px solid #dee2e6; font-weight: bold; }
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
@@ -77,7 +77,7 @@
         const auth = firebase.auth();
 
         let currentSubjectId, currentSubjectData, questions = [], displayedQuestions = [], currentQuiz = 0, score = 0, selectedOption = null, immediateFeedbackMode = false;
-        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view'];
+        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view', 'bulk-add-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
         
@@ -339,9 +339,7 @@
         
         function selectByRange() {
             const rangeStr = document.getElementById('range-select-input').value; if (!rangeStr.trim()) return;
-            const allCheckboxes = document.querySelectorAll('.question-checkbox'); const indicesToSelect = new Set();
-            const selectedPart = document.getElementById('part-filter').value;
-            const selectedPartCode = selectedPart === 'all' ? null : currentSubjectData.partCodes[selectedPart];
+            const allCheckboxes = Array.from(document.querySelectorAll('.question-checkbox')); const indicesToSelect = new Set();
             rangeStr.split(',').forEach(part => {
                 part = part.trim();
                 if (part.includes('-')) {
@@ -349,13 +347,12 @@
                     if (!isNaN(start) && !isNaN(end)) { for (let i = start; i <= end; i++) indicesToSelect.add(i); }
                 } else { const num = parseInt(part, 10); if (!isNaN(num)) indicesToSelect.add(num); }
             });
-            let visibleIndex = 0;
-            displayedQuestions.forEach((q, index) => {
-                const checkbox = allCheckboxes[index];
-                if(checkbox){
-                    const fixedId = q.fixedId; if (!fixedId) return;
-                    const idParts = fixedId.split('-'); const partCode = idParts[1];
-                    if (indicesToSelect.has(parseInt(idParts[2], 10))) { checkbox.checked = true; }
+            displayedQuestions.forEach(q => {
+                if (!q.fixedId) return;
+                const idNum = parseInt(q.fixedId.split('-')[2], 10);
+                if (indicesToSelect.has(idNum)) {
+                    const checkbox = allCheckboxes.find(cb => cb.value === q.id);
+                    if (checkbox) checkbox.checked = true;
                 }
             });
             updateSelectionActions();
