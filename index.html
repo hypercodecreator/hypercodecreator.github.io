@@ -260,6 +260,9 @@
             if (selected.length > 0) {
                 countSpan.textContent = `${selected.length}개 선택됨`;
             }
+            if (selected.length === 0) {
+                document.getElementById('select-all-checkbox').checked = false;
+            }
         }
 
         function toggleSelectAll(checked) { document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = checked); updateSelectionActions(); }
@@ -347,9 +350,9 @@
                 } else { const num = parseInt(part, 10); if (!isNaN(num)) indicesToSelect.add(num); }
             });
             let visibleIndex = 0;
-            displayedQuestions.forEach(q => {
-                const checkbox = document.querySelector(`.question-checkbox[value="${q.id}"]`);
-                if (checkbox) {
+            displayedQuestions.forEach((q, index) => {
+                const checkbox = allCheckboxes[index];
+                if(checkbox){
                     const fixedId = q.fixedId; if (!fixedId) return;
                     const idParts = fixedId.split('-'); const partCode = idParts[1];
                     if (indicesToSelect.has(parseInt(idParts[2], 10))) { checkbox.checked = true; }
