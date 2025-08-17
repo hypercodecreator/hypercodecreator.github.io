@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #212529; }
         .container { max-width: 700px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .hidden { display: none !important; } /* [수정] !important를 추가하여 다른 스타일을 덮어쓰고 항상 숨겨지도록 보장합니다. */
+        .hidden { display: none !important; }
         .button { width: 100%; padding: 12px; font-size: 1.1em; border-radius: 5px; cursor: pointer; margin-top: 10px; border: 1px solid #dee2e6; font-weight: bold; }
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
@@ -48,7 +48,7 @@
             <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
         <div id="subject-view"><h2>과목 선택</h2><button class="button secondary-button hidden" onclick="showBookmarkView()">⭐ 북마크 모아보기</button><hr style="border:none;border-top:1px solid #eee;margin:15px 0;" class="hidden"><div id="subject-list"></div></div>
-        <div id="quiz-view" class="hidden"><div class="quiz-question-header"><h2 id="quiz-header" style="margin:0;"></h2><span id="bookmark-toggle">☆</span></div><div class="mode-toggle" style="margin-top:10px;"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div><div id="quiz-body"></div><hr style="margin:20px 0;"><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
+        <div id="quiz-view" class="hidden"><div class="quiz-question-header"><h2 id="quiz-header" style="margin:0;"></h2><span id="bookmark-toggle">☆</span></div><div class="mode-toggle" style="margin-top:10px;"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div><div id="quiz-body"></div><hr style="margin:20px 0;"><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="bookmark-view" class="hidden"><h2>⭐ 북마크 모아보기</h2><div id="bookmark-list-container"></div><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
@@ -294,6 +294,63 @@
             await batch.commit();
             alert(`${selected.length}개의 문제를 '${newPartName}' 파트로 이동했습니다.`);
             showManagementView();
+        }
+
+        async function startWeaknessQuiz() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            const quizBody = document.getElementById('quiz-body');
+            quizBody.innerHTML = '<p>취약점 분석 중...</p>';
+
+            try {
+                const ratingsSnapshot = await db.collection('users').doc(user.uid).collection('confidenceRatings')
+                    .where('subjectId', '==', currentSubjectId)
+                    .where('level', 'in', ['unsure', 'guess'])
+                    .get();
+
+                if (ratingsSnapshot.empty) {
+                    quizBody.innerHTML = '<h2>🎉 이 과목에는 등록된 취약점이 없습니다!</h2><p>퀴즈를 풀며 자신감도를 기록해보세요.</p>';
+                    return;
+                }
+
+                const weakQuestionIds = ratingsSnapshot.docs.map(doc => doc.id);
+                
+                const fetchPromises = [];
+                for (let i = 0; i < weakQuestionIds.length; i += 10) {
+                    const chunk = weakQuestionIds.slice(i, i + 10);
+                    fetchPromises.push(
+                        db.collection('subjects').doc(currentSubjectId).collection('questions')
+                        .where(firebase.firestore.FieldPath.documentId(), 'in', chunk)
+                        .get()
+                    );
+                }
+                
+                const questionSnapshots = await Promise.all(fetchPromises);
+                
+                const weakQuestions = [];
+                questionSnapshots.forEach(snapshot => {
+                    snapshot.forEach(doc => weakQuestions.push({ id: doc.id, ...doc.data() }));
+                });
+
+                if (weakQuestions.length === 0) {
+                    quizBody.innerHTML = '<h2>문제를 찾을 수 없습니다.</h2><p>삭제되었거나 ID가 변경된 문제일 수 있습니다.</p>';
+                    return;
+                }
+
+                questions = weakQuestions.sort((a, b) => (a.fixedId > b.fixedId) ? 1 : -1);
+                score = 0;
+                currentQuiz = 0;
+                document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
+                await displayCurrentQuiz();
+
+            } catch (error) {
+                console.error("취약점 퀴즈 로딩 중 오류:", error);
+                quizBody.innerHTML = '<p>취약점 문제를 불러오는 중 오류가 발생했습니다.</p>';
+            }
         }
 
         function showAddForm() { showEditForm(null); }
