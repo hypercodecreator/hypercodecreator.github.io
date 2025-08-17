@@ -39,6 +39,14 @@
         .feedback p { margin: 5px 0; }
         .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
         .confidence-buttons button { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
+        
+        /* ✨ 도움말(메타 기능) 관련 스타일 */
+        #help-button { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background-color: #0d6efd; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1001; }
+        .modal-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; z-index: 1002; }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content .feature { margin-bottom: 15px; }
+        .modal-content .feature-title { font-weight: bold; }
     </style>
 </head>
 <body>
@@ -56,6 +64,25 @@
         <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
         <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
         <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
+    </div>
+
+    <button id="help-button" onclick="displayHelpModal()">?</button>
+    <div id="help-modal-overlay" class="modal-overlay hidden" onclick="closeHelpModal()"></div>
+    <div id="help-modal-content" class="modal-content hidden">
+        <h3>💡 주요 기능 안내</h3>
+        <div class="feature">
+            <p class="feature-title">⭐ 북마크 모아보기</p>
+            <p>퀴즈 화면에서 별(☆) 아이콘을 눌러 북마크(★)한 문제들만 모아서 풀어볼 수 있는 기능입니다. 중요한 문제를 따로 관리해보세요.</p>
+        </div>
+        <div class="feature">
+            <p class="feature-title">🎯 취약점 공략 퀴즈</p>
+            <p>퀴즈 정답 후 '애매함' 또는 '찍음'으로 표시한 문제들만 모아서 복습하는 개인 맞춤형 퀴즈입니다. 나의 약점을 집중적으로 보완할 수 있습니다.</p>
+        </div>
+        <div class="feature">
+            <p class="feature-title">📋 문제 관리</p>
+            <p>문제 추가, 수정, 삭제, 이동 등 모든 문제 데이터를 관리하는 기능입니다. '구간 선택'을 이용하면 여러 문제를 편리하게 한 번에 선택할 수 있습니다.</p>
+        </div>
+        <button class="button light-button" onclick="closeHelpModal()">닫기</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -93,6 +120,16 @@
         async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
 
+        // ✨ 도움말(메타 기능) 관련 함수
+        function displayHelpModal() {
+            document.getElementById('help-modal-overlay').classList.remove('hidden');
+            document.getElementById('help-modal-content').classList.remove('hidden');
+        }
+        function closeHelpModal() {
+            document.getElementById('help-modal-overlay').classList.add('hidden');
+            document.getElementById('help-modal-content').classList.add('hidden');
+        }
+
         async function loadSubjects() {
             const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
             const snapshot = await db.collection('subjects').orderBy('name').get();
@@ -115,6 +152,7 @@
         async function loadQuestionsForSubject(targetQuestionId = null) {
             const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
             try {
+                document.getElementById('quiz-header').textContent = `${currentSubjectData.name} 퀴즈`; // 퀴즈 헤더 초기화
                 const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
                 questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 score = 0;
@@ -130,7 +168,7 @@
         async function displayCurrentQuiz() {
             const quizBody = document.getElementById('quiz-body'); selectedOption = null;
             document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
-            if (questions.length === 0) { quizBody.innerHTML = "<p>이 과목에 문제가 없습니다.</p>"; return; }
+            if (questions.length === 0) { quizBody.innerHTML = "<p>표시할 문제가 없습니다.</p>"; return; }
             if (currentQuiz >= questions.length || !questions[currentQuiz]) { quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
             
             const data = questions[currentQuiz];
