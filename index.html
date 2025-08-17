@@ -39,30 +39,81 @@
         .feedback p { margin: 5px 0; }
         .mode-toggle { display: flex; justify-content: flex-end; align-items: center; font-size: 0.9em; margin-bottom: 10px; }
         .confidence-buttons button { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
-        
-        /* ✨ 도움말(메타 기능) 관련 스타일 */
         #help-button { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background-color: #0d6efd; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1001; }
         .modal-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; z-index: 1002; }
         .modal-content h3 { margin-top: 0; }
         .modal-content .feature { margin-bottom: 15px; }
         .modal-content .feature-title { font-weight: bold; }
+        #tree-container ul { list-style-type: none; padding-left: 20px; }
+        .tree-node { cursor: pointer; padding: 5px; }
+        .subject-node::before { content: '► '; }
+        .subject-node.expanded::before { content: '▼ '; }
+        .part-node { font-weight: bold; }
+        .question-node { font-size: 0.9em; color: #343a40; }
     </style>
 </head>
 <body>
     <div class="container">
+        <div id="subject-view">
+            <h2>과목 선택</h2>
+            <button class="button primary-button" onclick="showTreeView()">🌳 지식 체계 보기</button>
+            <button class="button secondary-button hidden" onclick="showBookmarkView()">⭐ 북마크 모아보기</button>
+            <hr style="border:none;border-top:1px solid #eee;margin:15px 0;" class="hidden">
+            <div id="subject-list"></div>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <div class="quiz-question-header">
+                <h2 id="quiz-header" style="margin:0;"></h2>
+                <span id="bookmark-toggle">☆</span>
+            </div>
+            <div id="breadcrumb-nav" style="font-size: 0.9em; color: #6c757d; margin-top: 5px;"></div>
+            <div class="mode-toggle" style="margin-top:10px;"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div>
+            <div id="quiz-body"></div>
+            <div id="immediate-feedback"></div>
+            <div id="concept-map" class="hidden" style="margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
+                <h4>🗺️ 개념 연결 지도</h4>
+                <div id="map-content"></div>
+            </div>
+            <hr style="margin:20px 0;">
+            <button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button>
+            <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
+            <button class="button primary-button" style="background-color: #198754;" onclick="startHorizontalQuiz()">↔️ 연관 문제 풀기</button>
+            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        </div>
+
+        <div id="tree-view" class="hidden">
+            <h2>🌳 지식 체계 보기</h2>
+            <div id="tree-container"></div>
+            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        </div>
+        
+        <div id="add-edit-view" class="hidden">
+            <h2 id="add-edit-header"></h2>
+            <input type="hidden" id="editing-question-id">
+            <div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div>
+            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
+            <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
+            <div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div>
+            <div class="form-group">
+                <label for="q-tags">태그 (쉼표로 구분)</label>
+                <input type="text" id="q-tags" placeholder="예: 함수, 차트, 데이터베이스">
+            </div>
+            <div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div>
+            <button id="save-btn" class="button primary-button">저장</button>
+            <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
+        </div>
+        
         <div id="auth-container">
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
             <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        <div id="subject-view"><h2>과목 선택</h2><button class="button secondary-button hidden" onclick="showBookmarkView()">⭐ 북마크 모아보기</button><hr style="border:none;border-top:1px solid #eee;margin:15px 0;" class="hidden"><div id="subject-list"></div></div>
-        <div id="quiz-view" class="hidden"><div class="quiz-question-header"><h2 id="quiz-header" style="margin:0;"></h2><span id="bookmark-toggle">☆</span></div><div class="mode-toggle" style="margin-top:10px;"><label for="feedback-toggle">즉시 결과 확인</label><input type="checkbox" id="feedback-toggle" onchange="toggleFeedbackMode(this.checked)"></div><div id="quiz-body"></div><hr style="margin:20px 0;"><button class="button secondary-button" onclick="showManagementView()">📋 문제 관리</button><button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="bookmark-view" class="hidden"><h2>⭐ 북마크 모아보기</h2><div id="bookmark-list-container"></div><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><span id="selection-count"></span><div class="button-group"><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
         <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
-        <div id="add-edit-view" class="hidden"><h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div><div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div><div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div><div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div><div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div><button id="save-btn" class="button primary-button">저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
         <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
     </div>
 
@@ -79,8 +130,8 @@
             <p>퀴즈 정답 후 '애매함' 또는 '찍음'으로 표시한 문제들만 모아서 복습하는 개인 맞춤형 퀴즈입니다. 나의 약점을 집중적으로 보완할 수 있습니다.</p>
         </div>
         <div class="feature">
-            <p class="feature-title">📋 문제 관리</p>
-            <p>문제 추가, 수정, 삭제, 이동 등 모든 문제 데이터를 관리하는 기능입니다. '구간 선택'을 이용하면 여러 문제를 편리하게 한 번에 선택할 수 있습니다.</p>
+            <p class="feature-title">↔️ 연관 문제 풀기</p>
+            <p>현재 풀고 있는 문제와 동일한 파트(소주제)에 속한 다른 문제들을 이어서 풀어보는 기능입니다. 유사 개념들을 함께 학습하여 지식을 공고히 할 수 있습니다.</p>
         </div>
         <button class="button light-button" onclick="closeHelpModal()">닫기</button>
     </div>
@@ -103,13 +154,12 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let currentSubjectId, currentSubjectData, questions = [], displayedQuestions = [], currentQuiz = 0, score = 0, selectedOption = null, immediateFeedbackMode = false;
-        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view', 'bulk-add-view'];
+        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], questions = [], displayedQuestions = [], currentQuiz = 0, score = 0, selectedOption = null, immediateFeedbackMode = false;
+        const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view', 'bulk-add-view', 'tree-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
-        
         auth.onAuthStateChanged(user => {
-            const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('button[onclick="showBookmarkView()"]'), document.querySelector('#subject-view hr')];
+            const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('#subject-view button[onclick="showBookmarkView()"]'), document.querySelector('#subject-view hr')];
             loggedInElements.forEach(el => el?.classList.toggle('hidden', !user));
             document.getElementById('logged-out-view').classList.toggle('hidden', !!user);
             if (user) { document.getElementById('user-email').textContent = `${user.email}님`; loadSubjects(); } 
@@ -119,8 +169,6 @@
         async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
-
-        // ✨ 도움말(메타 기능) 관련 함수
         function displayHelpModal() {
             document.getElementById('help-modal-overlay').classList.remove('hidden');
             document.getElementById('help-modal-content').classList.remove('hidden');
@@ -129,7 +177,6 @@
             document.getElementById('help-modal-overlay').classList.add('hidden');
             document.getElementById('help-modal-content').classList.add('hidden');
         }
-
         async function loadSubjects() {
             const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
             const snapshot = await db.collection('subjects').orderBy('name').get();
@@ -142,49 +189,52 @@
             });
         }
         
-        function selectSubject(id, data) {
+       async function selectSubject(id, data) {
             currentSubjectId = id; currentSubjectData = data;
-            document.getElementById('quiz-header').textContent = `${data.name} 퀴즈`;
             showView('quiz-view');
-            loadQuestionsForSubject();
+            await loadQuestionsForSubject();
         }
 
         async function loadQuestionsForSubject(targetQuestionId = null) {
             const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
             try {
-                document.getElementById('quiz-header').textContent = `${currentSubjectData.name} 퀴즈`; // 퀴즈 헤더 초기화
+                document.getElementById('quiz-header').textContent = `${currentSubjectData.name} 퀴즈`;
                 const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
-                questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                questions = [...allQuestionsForSubject];
                 score = 0;
                 currentQuiz = targetQuestionId ? questions.findIndex(q => q.id === targetQuestionId) : 0;
                 if (currentQuiz === -1) currentQuiz = 0;
                 await displayCurrentQuiz();
-            } catch (e) {
-                console.error("Error loading questions:", e);
-                quizBody.innerHTML = `<p>문제를 불러오는 중 오류가 발생했습니다. Firestore 콘솔에서 questions 컬렉션에 대한 색인을 생성해야 할 수 있습니다.</p>`;
-            }
+            } catch (e) { console.error("Error loading questions:", e); }
         }
-
+        
+        function updateBreadcrumb() {
+            const currentQ = questions[currentQuiz];
+            const navDiv = document.getElementById('breadcrumb-nav');
+            if (!currentQ) { navDiv.innerHTML = ''; return; }
+            navDiv.innerHTML = `<strong>과목:</strong> ${currentSubjectData.name} &nbsp;&nbsp; > &nbsp;&nbsp; <strong>파트:</strong> ${currentQ.partName || '미지정'}`;
+        }
+        
         async function displayCurrentQuiz() {
+            document.getElementById('concept-map').classList.add('hidden');
+            updateBreadcrumb();
             const quizBody = document.getElementById('quiz-body'); selectedOption = null;
             document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
             if (questions.length === 0) { quizBody.innerHTML = "<p>표시할 문제가 없습니다.</p>"; return; }
             if (currentQuiz >= questions.length || !questions[currentQuiz]) { quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
-            
             const data = questions[currentQuiz];
             let optionsHTML = '';
             (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
-            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div><ul id="options-container" class="options-container">${optionsHTML}</ul><div id="immediate-feedback"></div><button id="submit-btn" class="button primary-button">정답 제출</button>`;
-            
+            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div><ul id="options-container" class="options-container">${optionsHTML}</ul><button id="submit-btn" class="button primary-button">정답 제출</button>`;
             document.querySelectorAll('.option').forEach(li => { li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; }; });
             document.getElementById('submit-btn').onclick = submitAnswer;
-
             const bookmarkToggle = document.getElementById('bookmark-toggle');
             const isBookmarked = await checkBookmarkStatus(data.id);
             bookmarkToggle.textContent = isBookmarked ? '★' : '☆';
             bookmarkToggle.onclick = () => toggleBookmark(data.id);
         }
-
+        
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요!"); return; }
             const data = questions[currentQuiz]; const isCorrect = selectedOption === data.answer;
@@ -200,11 +250,80 @@
                     if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
                 }
                 feedbackDiv.innerHTML = feedbackHTML;
+                displayConceptMap(); // 개념 지도 표시
                 document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; if (opt.textContent === data.answer) opt.style.borderColor = '#198754'; else if (opt.textContent === selectedOption) opt.style.borderColor = '#dc3545'; });
                 const submitBtn = document.getElementById('submit-btn');
                 submitBtn.textContent = '다음 문제 →';
                 submitBtn.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
             } else { if (isCorrect) score++; currentQuiz++; displayCurrentQuiz(); }
+        }
+
+        function displayConceptMap() {
+            const mapContainer = document.getElementById('concept-map');
+            const mapContent = document.getElementById('map-content');
+            const currentQ = questions[currentQuiz];
+            if (!currentQ) return;
+            let contentHTML = '';
+            contentHTML += `<div class="feature"><p class="feature-title">🔼 상위 개념 (수직)</p><p><strong>거리 1:</strong> ${currentQ.partName || '미지정 파트'}</p><p><strong>거리 2:</strong> ${currentSubjectData.name}</p></div>`;
+            const siblingQuestions = allQuestionsForSubject.filter(q => q.partName === currentQ.partName && q.id !== currentQ.id);
+            if (siblingQuestions.length > 0) {
+                contentHTML += `<div class="feature"><p class="feature-title">↔️ 연관 개념 (수평 거리 2)</p><ul>`;
+                siblingQuestions.slice(0, 5).forEach(q => { contentHTML += `<li>${q.fixedId}. ${q.text}</li>`; }); // 너무 길어지지 않게 5개만 표시
+                if (siblingQuestions.length > 5) contentHTML += `<li>...외 ${siblingQuestions.length - 5}개</li>`;
+                contentHTML += '</ul></div>';
+            }
+            mapContent.innerHTML = contentHTML;
+            mapContainer.classList.remove('hidden');
+        }
+
+        async function startHorizontalQuiz() {
+            const currentQ = questions[currentQuiz];
+            if (!currentQ || !currentQ.partName) { alert('현재 문제의 파트 정보가 없어 연관 문제를 찾을 수 없습니다.'); return; }
+            const relatedQuestions = allQuestionsForSubject.filter(q => q.partName === currentQ.partName && q.id !== currentQ.id);
+            if (relatedQuestions.length === 0) { alert('이 파트에는 다른 연관 문제가 없습니다.'); return; }
+            questions = relatedQuestions;
+            currentQuiz = 0; score = 0;
+            document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 연관 문제`;
+            displayCurrentQuiz();
+        }
+
+        async function showTreeView() {
+            showView('tree-view');
+            const container = document.getElementById('tree-container');
+            container.innerHTML = '지식 체계 로딩 중...';
+            const subjectsSnapshot = await db.collection('subjects').orderBy('name').get();
+            let treeHTML = '<ul>';
+            subjectsSnapshot.forEach(doc => {
+                const subject = doc.data();
+                treeHTML += `<li class="tree-node subject-node" onclick="toggleSubjectNode(event, '${doc.id}')">${subject.name}</li>`;
+            });
+            treeHTML += '</ul>';
+            container.innerHTML = treeHTML;
+        }
+
+        async function toggleSubjectNode(event, subjectId) {
+            event.stopPropagation();
+            const node = event.currentTarget;
+            const childUl = node.querySelector('ul');
+            if (childUl) { childUl.remove(); node.classList.remove('expanded'); return; }
+            node.classList.add('expanded');
+            const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').orderBy('fixedId').get();
+            const parts = {};
+            questionsSnapshot.forEach(doc => {
+                const q = doc.data();
+                const part = q.partName || '미지정 파트';
+                if (!parts[part]) parts[part] = [];
+                parts[part].push(q);
+            });
+            let subTreeHTML = '<ul>';
+            for (const partName in parts) {
+                subTreeHTML += `<li class="tree-node part-node">${partName}`;
+                subTreeHTML += '<ul>';
+                parts[partName].forEach(q => { subTreeHTML += `<li class="tree-node question-node">${q.fixedId}. ${q.text}</li>`; });
+                subTreeHTML += '</ul></li>';
+            }
+            subTreeHTML += '</ul>';
+            node.insertAdjacentHTML('beforeend', subTreeHTML);
         }
         
         function toggleFeedbackMode(isEnabled) { immediateFeedbackMode = isEnabled; }
@@ -392,14 +511,16 @@
         }
 
         function showAddForm() { showEditForm(null); }
+        
         function showEditForm(id) {
-            const isEditing = !!id, q = isEditing ? questions.find(q => q.id === id) : {};
+            const isEditing = !!id, q = isEditing ? allQuestionsForSubject.find(q => q.id === id) : {};
             document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
             document.getElementById('editing-question-id').value = id || '';
             document.getElementById('q-text').value = q.text || '';
             document.getElementById('q-answer').value = q.answer || '';
             document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
+            document.getElementById('q-tags').value = (q.tags || []).join(', '); // 태그 표시
             const optsContainer = document.getElementById('q-options-container'); optsContainer.innerHTML = '';
             (q.options || ['', '']).forEach(opt => addOptionField(opt));
             document.getElementById('save-btn').onclick = saveQuestion;
@@ -408,7 +529,15 @@
 
         async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
-            const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), explanation: document.getElementById('q-explanation').value.trim(), partName: document.getElementById('q-part').value, options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean) };
+            const tags = document.getElementById('q-tags').value.split(',').map(tag => tag.trim()).filter(Boolean);
+            const data = { 
+                text: document.getElementById('q-text').value.trim(), 
+                answer: document.getElementById('q-answer').value.trim(), 
+                explanation: document.getElementById('q-explanation').value.trim(), 
+                partName: document.getElementById('q-part').value, 
+                options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean),
+                tags: tags // 태그 저장
+            };
             if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
             if (id) { await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); alert('문제가 수정되었습니다.'); } 
             else { 
