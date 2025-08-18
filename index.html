@@ -19,6 +19,8 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
+        .tag-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .tag-group input { flex-grow: 1; }
         #management-actions { display: flex; justify-content: space-between; align-items: center; border: 1px solid #0d6efd; background-color: #e7f1ff; padding: 8px 12px; border-radius: 5px; margin-bottom: 10px; }
         #management-actions .button-group { display: flex; gap: 5px; }
         #management-actions .button { margin-top: 0; padding: 6px 10px; font-size: 0.9em; }
@@ -55,6 +57,11 @@
 </head>
 <body>
     <div class="container">
+        <div id="auth-container">
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
+        </div>
+        
         <div id="subject-view">
             <h2>과목 선택</h2>
             <button class="button primary-button" onclick="showTreeView()">🌳 지식 체계 보기</button>
@@ -89,50 +96,44 @@
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
         
-        <div id="add-edit-view" class="hidden">
-            <h2 id="add-edit-header"></h2>
-            <input type="hidden" id="editing-question-id">
-            <div class="form-group"><label for="q-text">문제</label><textarea id="q-text" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
-            <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-part">파트</label><select id="q-part"></select></div>
-            <div class="form-group">
-                <label for="q-tags">태그 (쉼표로 구분)</label>
-                <input type="text" id="q-tags" placeholder="예: 함수, 차트, 데이터베이스">
-            </div>
-            <div class="form-group"><label>보기</label><div id="q-options-container"></div><button class="light-button" onclick="addOptionField()">보기 필드 추가</button></div>
-            <button id="save-btn" class="button primary-button">저장</button>
-            <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
-        </div>
-        
-        <div id="auth-container">
-            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
-            <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
-        </div>
         <div id="bookmark-view" class="hidden"><h2>⭐ 북마크 모아보기</h2><div id="bookmark-list-container"></div><button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button></div>
         <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 문제 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><span id="selection-count"></span><div class="button-group"><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
-        <div id="move-question-view" class="hidden"><h2>선택한 문제 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
-        <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
+        
+        <div id="management-view" class="hidden"><h2 id="management-header"></h2><button class="button primary-button" onclick="showAddForm()">+ 새 키워드 추가</button><button class="button primary-button" onclick="showView('bulk-add-view')">+ 여러 키워드 추가</button><hr><div class="form-group"><label for="part-filter" style="font-weight:normal;">파트별로 보기</label><select id="part-filter" class="form-group" onchange="showManagementView()"></select></div><div id="management-actions" class="hidden"><span id="selection-count"></span><div class="button-group"><button class="button secondary-button" onclick="showMoveDialog()">이동</button><button class="button danger-button" onclick="deleteSelectedQuestions()">삭제</button></div></div><div class="range-select-container"><input type="text" id="range-select-input" class="form-group" placeholder="예: 1-5, 8, 10-12"><button class="button light-button" onclick="selectByRange()">구간 선택</button></div><div><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"> <label for="select-all-checkbox">전체 선택</label></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('quiz-view')">← 퀴즈 화면으로</button></div>
+        
+        <div id="move-question-view" class="hidden"><h2>선택한 키워드 이동</h2><div class="form-group"><label for="target-part">이동할 파트</label><select id="target-part" class="form-group"></select></div><button class="button primary-button" onclick="executeMove()">이동 실행</button><button class="button light-button" onclick="showView('management-view')">취소</button></div>
+        
+        <div id="add-edit-view" class="hidden">
+            <h2 id="add-edit-header"></h2>
+            <input type="hidden" id="editing-question-id">
+            <div class="form-group"><label for="q-keyword">핵심 키워드 (문제 텍스트)</label><textarea id="q-keyword" rows="3" placeholder="예: 명장초등학교의 역사"></textarea></div>
+            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
+            <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
+            <div class="form-group"><label for="q-part">소속 파트</label><select id="q-part"></select></div>
+            <hr>
+            <h4>구조화된 태그 (개념의 속성)</h4>
+            <div id="q-tags-container"></div>
+            <button class="button light-button" onclick="addTagField()">+ 태그 추가</button>
+            <hr>
+            <h4>단순 보기 (4지선다 등)</h4>
+            <div id="q-options-container"></div>
+            <button class="button light-button" onclick="addOptionField()">+ 보기 추가</button>
+            <hr>
+            <button id="save-btn" class="button primary-button">저장</button>
+            <button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button>
+        </div>
+
+        <div id="bulk-add-view" class="hidden"><h2>📚 여러 키워드 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showView('management-view')">← 관리 화면으로</button></div>
     </div>
 
     <button id="help-button" onclick="displayHelpModal()">?</button>
     <div id="help-modal-overlay" class="modal-overlay hidden" onclick="closeHelpModal()"></div>
     <div id="help-modal-content" class="modal-content hidden">
         <h3>💡 주요 기능 안내</h3>
-        <div class="feature">
-            <p class="feature-title">⭐ 북마크 모아보기</p>
-            <p>퀴즈 화면에서 별(☆) 아이콘을 눌러 북마크(★)한 문제들만 모아서 풀어볼 수 있는 기능입니다. 중요한 문제를 따로 관리해보세요.</p>
-        </div>
-        <div class="feature">
-            <p class="feature-title">🎯 취약점 공략 퀴즈</p>
-            <p>퀴즈 정답 후 '애매함' 또는 '찍음'으로 표시한 문제들만 모아서 복습하는 개인 맞춤형 퀴즈입니다. 나의 약점을 집중적으로 보완할 수 있습니다.</p>
-        </div>
-        <div class="feature">
-            <p class="feature-title">↔️ 연관 문제 풀기</p>
-            <p>현재 풀고 있는 문제와 동일한 파트(소주제)에 속한 다른 문제들을 이어서 풀어보는 기능입니다. 유사 개념들을 함께 학습하여 지식을 공고히 할 수 있습니다.</p>
-        </div>
+        <div class="feature"><p class="feature-title">⭐ 북마크 모아보기</p><p>퀴즈 화면에서 별(☆) 아이콘을 눌러 북마크(★)한 문제들만 모아서 풀어볼 수 있는 기능입니다. 중요한 문제를 따로 관리해보세요.</p></div>
+        <div class="feature"><p class="feature-title">🎯 취약점 공략 퀴즈</p><p>퀴즈 정답 후 '애매함' 또는 '찍음'으로 표시한 문제들만 모아서 복습하는 개인 맞춤형 퀴즈입니다. 나의 약점을 집중적으로 보완할 수 있습니다.</p></div>
+        <div class="feature"><p class="feature-title">↔️ 연관 문제 풀기</p><p>현재 풀고 있는 문제와 동일한 파트(소주제)에 속한 다른 문제들을 이어서 풀어보는 기능입니다. 유사 개념들을 함께 학습하여 지식을 공고히 할 수 있습니다.</p></div>
         <button class="button light-button" onclick="closeHelpModal()">닫기</button>
     </div>
 
@@ -141,6 +142,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
+        
         const firebaseConfig = {
   apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
   authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
@@ -158,6 +160,7 @@
         const views = ['subject-view', 'signup-view', 'login-view', 'quiz-view', 'management-view', 'add-edit-view', 'move-question-view', 'bookmark-view', 'bulk-add-view', 'tree-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
+        
         auth.onAuthStateChanged(user => {
             const loggedInElements = [document.getElementById('logged-in-view'), document.querySelector('#subject-view button[onclick="showBookmarkView()"]'), document.querySelector('#subject-view hr')];
             loggedInElements.forEach(el => el?.classList.toggle('hidden', !user));
@@ -169,14 +172,10 @@
         async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
-        function displayHelpModal() {
-            document.getElementById('help-modal-overlay').classList.remove('hidden');
-            document.getElementById('help-modal-content').classList.remove('hidden');
-        }
-        function closeHelpModal() {
-            document.getElementById('help-modal-overlay').classList.add('hidden');
-            document.getElementById('help-modal-content').classList.add('hidden');
-        }
+
+        function displayHelpModal() { document.getElementById('help-modal-overlay').classList.remove('hidden'); document.getElementById('help-modal-content').classList.remove('hidden'); }
+        function closeHelpModal() { document.getElementById('help-modal-overlay').classList.add('hidden'); document.getElementById('help-modal-content').classList.add('hidden'); }
+
         async function loadSubjects() {
             const listDiv = document.getElementById('subject-list'); listDiv.innerHTML = '과목 로딩 중...';
             const snapshot = await db.collection('subjects').orderBy('name').get();
@@ -215,7 +214,7 @@
             if (!currentQ) { navDiv.innerHTML = ''; return; }
             navDiv.innerHTML = `<strong>과목:</strong> ${currentSubjectData.name} &nbsp;&nbsp; > &nbsp;&nbsp; <strong>파트:</strong> ${currentQ.partName || '미지정'}`;
         }
-        
+
         async function displayCurrentQuiz() {
             document.getElementById('concept-map').classList.add('hidden');
             updateBreadcrumb();
@@ -224,9 +223,11 @@
             if (questions.length === 0) { quizBody.innerHTML = "<p>표시할 문제가 없습니다.</p>"; return; }
             if (currentQuiz >= questions.length || !questions[currentQuiz]) { quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
             const data = questions[currentQuiz];
+            const textContent = data.keyword || data.text; // 이전 버전 호환
             let optionsHTML = '';
             (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
-            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${data.text}</div><ul id="options-container" class="options-container">${optionsHTML}</ul><button id="submit-btn" class="button primary-button">정답 제출</button>`;
+            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${textContent}</div><ul id="options-container" class="options-container">${optionsHTML}</ul>`;
+            document.getElementById('immediate-feedback').innerHTML = `<button id="submit-btn" class="button primary-button">정답 제출</button>`;
             document.querySelectorAll('.option').forEach(li => { li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; }; });
             document.getElementById('submit-btn').onclick = submitAnswer;
             const bookmarkToggle = document.getElementById('bookmark-toggle');
@@ -250,11 +251,13 @@
                     if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
                 }
                 feedbackDiv.innerHTML = feedbackHTML;
-                displayConceptMap(); // 개념 지도 표시
+                displayConceptMap();
                 document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; if (opt.textContent === data.answer) opt.style.borderColor = '#198754'; else if (opt.textContent === selectedOption) opt.style.borderColor = '#dc3545'; });
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.textContent = '다음 문제 →';
-                submitBtn.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
+                const nextButton = document.createElement('button');
+                nextButton.className = 'button primary-button';
+                nextButton.textContent = '다음 문제 →';
+                nextButton.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
+                feedbackDiv.appendChild(nextButton);
             } else { if (isCorrect) score++; currentQuiz++; displayCurrentQuiz(); }
         }
 
@@ -268,7 +271,7 @@
             const siblingQuestions = allQuestionsForSubject.filter(q => q.partName === currentQ.partName && q.id !== currentQ.id);
             if (siblingQuestions.length > 0) {
                 contentHTML += `<div class="feature"><p class="feature-title">↔️ 연관 개념 (수평 거리 2)</p><ul>`;
-                siblingQuestions.slice(0, 5).forEach(q => { contentHTML += `<li>${q.fixedId}. ${q.text}</li>`; }); // 너무 길어지지 않게 5개만 표시
+                siblingQuestions.slice(0, 5).forEach(q => { contentHTML += `<li>${q.fixedId}. ${q.keyword || q.text}</li>`; });
                 if (siblingQuestions.length > 5) contentHTML += `<li>...외 ${siblingQuestions.length - 5}개</li>`;
                 contentHTML += '</ul></div>';
             }
@@ -513,34 +516,63 @@
         function showAddForm() { showEditForm(null); }
         
         function showEditForm(id) {
-            const isEditing = !!id, q = isEditing ? allQuestionsForSubject.find(q => q.id === id) : {};
-            document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
+            const isEditing = !!id;
+            const q = isEditing ? allQuestionsForSubject.find(q => q.id === id) : {};
+            document.getElementById('add-edit-header').textContent = isEditing ? '키워드 수정' : '새 키워드 추가';
             document.getElementById('editing-question-id').value = id || '';
-            document.getElementById('q-text').value = q.text || '';
+            document.getElementById('q-keyword').value = q.keyword || q.text || '';
             document.getElementById('q-answer').value = q.answer || '';
             document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
-            document.getElementById('q-tags').value = (q.tags || []).join(', '); // 태그 표시
-            const optsContainer = document.getElementById('q-options-container'); optsContainer.innerHTML = '';
-            (q.options || ['', '']).forEach(opt => addOptionField(opt));
+            const tagsContainer = document.getElementById('q-tags-container');
+            tagsContainer.innerHTML = '';
+            addTagField(); // 기본으로 빈 태그 필드 하나 추가
+            if(q.tags) q.tags.forEach((tag, index) => {
+                if(index === 0) { // 첫번째 태그는 기본 필드에 값 설정
+                    tagsContainer.querySelector('.tag-meta').value = tag.meta;
+                    tagsContainer.querySelector('.tag-value').value = tag.value;
+                } else {
+                    addTagField(tag.meta, tag.value);
+                }
+            });
+            const optsContainer = document.getElementById('q-options-container');
+            optsContainer.innerHTML = '';
+            addOptionField(); // 기본으로 빈 보기 필드 하나 추가
+            if(q.options) q.options.forEach((opt, index) => {
+                if(index === 0) {
+                    optsContainer.querySelector('input').value = opt;
+                } else {
+                    addOptionField(opt);
+                }
+            });
             document.getElementById('save-btn').onclick = saveQuestion;
             showView('add-edit-view');
         }
 
         async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
-            const tags = document.getElementById('q-tags').value.split(',').map(tag => tag.trim()).filter(Boolean);
+            const tags = [];
+            document.querySelectorAll('#q-tags-container .tag-group').forEach(group => {
+                const meta = group.querySelector('.tag-meta').value.trim();
+                const value = group.querySelector('.tag-value').value.trim();
+                if (meta && value) { tags.push({ meta, value }); }
+            });
+
             const data = { 
-                text: document.getElementById('q-text').value.trim(), 
+                keyword: document.getElementById('q-keyword').value.trim(),
+                text: document.getElementById('q-keyword').value.trim(),
                 answer: document.getElementById('q-answer').value.trim(), 
                 explanation: document.getElementById('q-explanation').value.trim(), 
                 partName: document.getElementById('q-part').value, 
                 options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean),
-                tags: tags // 태그 저장
+                tags: tags
             };
-            if (!data.text || !data.answer || !data.partName) { alert("문제, 정답, 파트는 필수 항목입니다."); return; }
-            if (id) { await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); alert('문제가 수정되었습니다.'); } 
-            else { 
+            
+            if (!data.keyword || !data.answer || !data.partName) { alert("키워드, 정답, 소속 파트는 필수 항목입니다."); return; }
+            if (id) { 
+                await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data); 
+                alert('키워드가 수정되었습니다.');
+            } else { 
                 const subjectRef = db.collection('subjects').doc(currentSubjectId);
                 try {
                     await db.runTransaction(async t => {
@@ -555,10 +587,10 @@
                         t.update(subjectRef, { questionCount: firebase.firestore.FieldValue.increment(1), [`partCounters.${partCode}`]: newCount });
                     });
                     currentSubjectData.questionCount++;
-                    alert('문제가 추가되었습니다. 고유 ID: ' + data.fixedId);
-                } catch (error) { console.error("문제 추가 오류:", error); alert("고유 ID 생성 중 오류가 발생했습니다."); return; }
+                    alert('키워드가 추가되었습니다. 고유 ID: ' + data.fixedId);
+                } catch (error) { console.error("키워드 추가 오류:", error); alert("고유 ID 생성 중 오류가 발생했습니다."); return; }
             }
-            showManagementView();
+            await showManagementView();
         }
         
         function selectByRange() {
@@ -615,9 +647,37 @@
             if (count > 0) { currentSubjectData.questionCount += count; alert(`${count}개의 문제가 추가되었습니다.`); showManagementView(); }
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
         }
+
+        function addTagField(meta = '', value = '') {
+            const container = document.getElementById('q-tags-container');
+            const div = document.createElement('div');
+            div.className = 'tag-group';
+            div.innerHTML = `<input type="text" class="tag-meta" placeholder="메타태그 (예: 위치)" value="${meta}"><input type="text" class="tag-value" placeholder="태그값 (예: 명장동)" value="${value}">`;
+            container.appendChild(div);
+        }
         
-        function addOptionField(value = '') { const container = document.getElementById('q-options-container'); const input = document.createElement('input'); input.type = 'text'; input.style.cssText='width:100%;padding:10px;margin-bottom:5px;box-sizing:border-box;border:1px solid #ccc;border-radius:5px;'; input.value = value; container.appendChild(input); }
-        function populatePartSelect(selectedValue) { const select = document.getElementById('q-part'); select.innerHTML = ''; (currentSubjectData.partOrder || []).forEach(part => { const opt = document.createElement('option'); opt.value = part; opt.textContent = part; if (part === selectedValue) opt.selected = true; select.appendChild(opt); }); }
+        function addOptionField(value = '') {
+            const container = document.getElementById('q-options-container');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-group';
+            input.style.marginBottom = '10px';
+            input.value = value;
+            container.appendChild(input);
+        }
+
+        function populatePartSelect(selectedValue) {
+            const select = document.getElementById('q-part');
+            select.innerHTML = '';
+            (currentSubjectData.partOrder || []).forEach(part => {
+                const opt = document.createElement('option');
+                opt.value = part;
+                opt.textContent = part;
+                if (part === selectedValue) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+        
     </script>
 </body>
 </html>
