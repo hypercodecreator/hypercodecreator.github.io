@@ -139,9 +139,6 @@
         async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
 
-        function displayHelpModal() { document.getElementById('help-modal-overlay').classList.remove('hidden'); document.getElementById('help-modal-content').classList.remove('hidden'); }
-        function closeHelpModal() { document.getElementById('help-modal-overlay').classList.add('hidden'); document.getElementById('help-modal-content').classList.add('hidden'); }
-
         // 과목 목록 로드
         async function loadSubjects() {
             const listDiv = document.getElementById('subject-list');
@@ -165,18 +162,39 @@
             await showManagementView({ refetch: true });
         }
 
-        async function loadQuestionsForSubject(targetQuestionId = null) {
-            const quizBody = document.getElementById('quiz-body'); quizBody.innerHTML = '<p>문제 로딩 중...</p>';
-            try {
-                document.getElementById('quiz-header').textContent = `${currentSubjectData.name} 퀴즈`;
+        // 과목 선택 및 문제 로드
+        async function selectSubject(id, data) {
+            currentSubjectId = id;
+            currentSubjectData = data;
+            await showManagementView({ refetch: true });
+        }
+
+        // 문제 관리 화면 표시 (✨ 즉시성 보장을 위해 로직 강화)
+        async function showManagementView(options = { refetch: true }) {
+            showView('management-view');
+            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+            const container = document.getElementById('question-list-container');
+            
+            if (options.refetch) {
+                container.innerHTML = '문제 목록 로딩 중...';
                 const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
                 allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                questions = [...allQuestionsForSubject];
-                score = 0;
-                currentQuiz = targetQuestionId ? questions.findIndex(q => q.id === targetQuestionId) : 0;
-                if (currentQuiz === -1) currentQuiz = 0;
-                await displayCurrentQuiz();
-            } catch (e) { console.error("Error loading questions:", e); }
+            }
+            
+            container.innerHTML = '';
+            if (allQuestionsForSubject.length === 0) {
+                container.innerHTML = '<p>등록된 문제가 없습니다.</p>';
+            } else {
+                allQuestionsForSubject.forEach(q => {
+                    const item = document.createElement('div');
+                    item.className = 'question-item';
+                    item.innerHTML = `
+                        <span class="question-item-text">${q.fixedId || ''}. ${q.text}</span>
+                        <button class="button light-button" onclick="showEditForm('${q.id}')" style="margin:0; padding: 6px 10px; font-size: 0.9em;">수정</button>
+                    `;
+                    container.appendChild(item);
+                });
+            }
         }
         
         function updateBreadcrumb() {
@@ -359,33 +377,7 @@
             }
         }
         
-        // 문제 관리 화면 표시 (✨ 즉시성 보장을 위해 로직 강화)
-        async function showManagementView(options = { refetch: true }) {
-            showView('management-view');
-            document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
-            const container = document.getElementById('question-list-container');
-            
-            if (options.refetch) {
-                container.innerHTML = '문제 목록 로딩 중...';
-                const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
-                allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            }
-            
-            container.innerHTML = '';
-            if (allQuestionsForSubject.length === 0) {
-                container.innerHTML = '<p>등록된 문제가 없습니다.</p>';
-            } else {
-                allQuestionsForSubject.forEach(q => {
-                    const item = document.createElement('div');
-                    item.className = 'question-item';
-                    item.innerHTML = `
-                        <span class="question-item-text">${q.fixedId || ''}. ${q.text}</span>
-                        <button class="button light-button" onclick="showEditForm('${q.id}')" style="margin:0; padding: 6px 10px; font-size: 0.9em;">수정</button>
-                    `;
-                    container.appendChild(item);
-                });
-            }
-        }
+        
 
         function updateSelectionActions() {
             const selected = document.querySelectorAll('.question-checkbox:checked');
@@ -530,6 +522,7 @@
             group.appendChild(removeBtn);
             container.appendChild(group);
         }
+        
         function addKeywordField(value = '') { createDynamicField('q-keywords-container', '키워드 (예: 명장초등학교)', value); }
         function addOptionField(value = '') { createDynamicField('q-options-container', '보기 내용', value); }
         function addTagField(meta = '', value = '') {
