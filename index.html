@@ -12,7 +12,6 @@
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
         .light-button { background-color: #f8f9fa; color: #212529; }
-        .danger-button { background-color: #dc3545; color: white; border-color: #dc3545; }
         #auth-container { display: flex; justify-content: flex-end; align-items: center; padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
         #auth-container button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         #auth-container span { font-size: 0.9em; margin-right: auto; }
@@ -21,7 +20,6 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em;}
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; padding-bottom: 15px; border-bottom: 1px solid #eee;}
         .dynamic-field-group .inputs { flex-grow: 1; }
-        .dynamic-field-group .inputs input { margin-bottom: 5px; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
         .remove-btn { padding: 8px 12px; font-size: 0.9em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; }
@@ -49,6 +47,8 @@
             <div id="quiz-body"></div>
             <div id="immediate-feedback"></div>
             <hr style="margin:20px 0;">
+            <button class="button secondary-button" onclick="showManagementView({ refetch: true })">📋 문제 관리</button>
+            <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
         
@@ -64,24 +64,21 @@
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
-            
             <h4>1. 문제 정보</h4>
             <div class="form-group"><label for="q-text">문제 내용</label><textarea id="q-text" rows="3" placeholder="예: 명장초등학교가 속한 행정구역은?"></textarea></div>
             <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
             <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
             <div class="form-group"><label for="q-part">소속 파트</label><select id="q-part"></select></div>
             <hr>
-            
             <h4>2. 개념 분석 (선택)</h4>
             <div class="form-group"><label>구조화된 키워드</label><div id="q-keywords-container"></div><button class="button light-button" onclick="addKeywordField()">+ 키워드 추가</button></div>
             <div class="form-group"><label>구조화된 태그</label><div id="q-tags-container"></div><button class="button light-button" onclick="addTagField()">+ 태그 추가</button></div>
+            <div class="form-group"><label>구조화된 메타태그</label><div id="q-metatags-container"></div><button class="button light-button" onclick="addMetatagField()">+ 메타태그 추가</button></div>
             <hr>
-
             <h4>3. 객관식 보기 (선택)</h4>
             <div id="q-options-container"></div>
             <button class="button light-button" onclick="addOptionField()">+ 보기 추가</button>
             <hr>
-
             <button id="save-btn" class="button primary-button">저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
@@ -94,7 +91,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
     <script>
         
         const firebaseConfig = {
@@ -109,8 +105,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-
-        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
+        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], currentQuiz = [], quizQuestions = [];
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
@@ -142,13 +137,7 @@
                 const subject = doc.data();
                 const item = document.createElement('div');
                 item.className = 'subject-item';
-                item.innerHTML = `
-                    <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                    <div class="subject-item-buttons">
-                        <button class="button primary-button" onclick="startQuiz('${doc.id}')">퀴즈 시작</button>
-                        <button class="button secondary-button" onclick="manageSubject('${doc.id}')">문제 관리</button>
-                    </div>
-                `;
+                item.innerHTML = `<span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span><div class="subject-item-buttons"><button class="button primary-button" onclick="startQuiz('${doc.id}')">퀴즈 시작</button><button class="button secondary-button" onclick="manageSubject('${doc.id}')">문제 관리</button></div>`;
                 listDiv.appendChild(item);
             });
         }
@@ -176,23 +165,22 @@
         }
         
         async function startQuiz(id) {
-            // 이 함수는 퀴즈 시작 로직을 담당합니다 (추후 구현).
-            // 일단은 관리 화면으로 연결합니다.
-            await manageSubject(id);
+            await manageSubject(id); // 먼저 과목 정보를 로드
+            quizQuestions = [...allQuestionsForSubject];
+            currentQuizIndex = 0;
             showView('quiz-view');
+            displayCurrentQuiz();
         }
 
         async function showManagementView(options = { refetch: true }) {
             showView('management-view');
             document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
             const container = document.getElementById('question-list-container');
-            
             if (options.refetch) {
                 container.innerHTML = '문제 목록 로딩 중...';
                 const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
                 allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }
-            
             container.innerHTML = '';
             if (allQuestionsForSubject.length === 0) {
                 container.innerHTML = '<p>등록된 문제가 없습니다.</p>';
@@ -200,10 +188,7 @@
                 allQuestionsForSubject.forEach(q => {
                     const item = document.createElement('div');
                     item.className = 'question-item';
-                    item.innerHTML = `
-                        <span class="question-item-text">${q.fixedId || ''}. ${q.text}</span>
-                        <button class="button light-button question-item-button" onclick="showEditForm('${q.id}')">수정</button>
-                    `;
+                    item.innerHTML = `<span class="question-item-text">${q.fixedId || ''}. ${q.text}</span><button class="button light-button question-item-button" onclick="showEditForm('${q.id}')">수정</button>`;
                     container.appendChild(item);
                 });
             }
@@ -216,25 +201,17 @@
             navDiv.innerHTML = `<strong>과목:</strong> ${currentSubjectData.name} &nbsp;&nbsp; > &nbsp;&nbsp; <strong>파트:</strong> ${currentQ.partName || '미지정'}`;
         }
 
-        async function displayCurrentQuiz() {
-            document.getElementById('concept-map').classList.add('hidden');
-            updateBreadcrumb();
-            const quizBody = document.getElementById('quiz-body'); selectedOption = null;
-            document.getElementById('feedback-toggle').checked = immediateFeedbackMode;
-            if (questions.length === 0) { quizBody.innerHTML = "<p>표시할 문제가 없습니다.</p>"; return; }
-            if (currentQuiz >= questions.length || !questions[currentQuiz]) { quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2><button class="button primary-button" onclick="loadQuestionsForSubject()">다시 풀기</button>`; return; }
-            const data = questions[currentQuiz];
-            const textContent = data.keyword || data.text; // 이전 버전 호환
+        function displayCurrentQuiz() {
+            const quizBody = document.getElementById('quiz-body');
+            document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 퀴즈`;
+            if (currentQuizIndex >= quizQuestions.length) {
+                quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2>`;
+                return;
+            }
+            const data = quizQuestions[currentQuizIndex];
             let optionsHTML = '';
-            (data.options || []).forEach(opt => { optionsHTML += `<li class="option">${opt}</li>`; });
-            quizBody.innerHTML = `<div id="question">${data.fixedId || (currentQuiz + 1)}. ${textContent}</div><ul id="options-container" class="options-container">${optionsHTML}</ul>`;
-            document.getElementById('immediate-feedback').innerHTML = `<button id="submit-btn" class="button primary-button">정답 제출</button>`;
-            document.querySelectorAll('.option').forEach(li => { li.onclick = () => { document.querySelector('.option.selected')?.classList.remove('selected'); li.classList.add('selected'); selectedOption = li.textContent; }; });
-            document.getElementById('submit-btn').onclick = submitAnswer;
-            const bookmarkToggle = document.getElementById('bookmark-toggle');
-            const isBookmarked = await checkBookmarkStatus(data.id);
-            bookmarkToggle.textContent = isBookmarked ? '★' : '☆';
-            bookmarkToggle.onclick = () => toggleBookmark(data.id);
+            (data.options || []).forEach(opt => { optionsHTML += `<div class="option">${opt}</div>`; });
+            quizBody.innerHTML = `<h4>${data.fixedId}. ${data.text}</h4><div>${optionsHTML}</div>`;
         }
         
         function submitAnswer() {
@@ -498,65 +475,41 @@
         function showEditForm(id) {
             const isEditing = !!id;
             const q = isEditing ? allQuestionsForSubject.find(q => q.id === id) : {};
-            
             showView('add-edit-view');
             document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
             document.getElementById('editing-question-id').value = id || '';
-            
             document.getElementById('q-text').value = q.text || '';
             document.getElementById('q-answer').value = q.answer || '';
             document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
 
-            ['q-keywords-container', 'q-tags-container', 'q-options-container'].forEach(id => document.getElementById(id).innerHTML = '');
-            (q.keywords && q.keywords.length > 0 ? q.keywords : ['']).forEach(kw => addKeywordField(kw));
-            (q.tags && q.tags.length > 0 ? q.tags : [{meta:'', value:''}]).forEach(t => addTagField(t.meta, t.value));
-            (q.options && q.options.length > 0 ? q.options : ['']).forEach(opt => addOptionField(opt));
+            ['q-keywords-container', 'q-tags-container', 'q-metatags-container', 'q-options-container'].forEach(id => document.getElementById(id).innerHTML = '');
+            (q.keywords || ['']).forEach(kw => addKeywordField(kw));
+            (q.tags || ['']).forEach(t => addTagField(t));
+            (q.metatags || ['']).forEach(mt => addMetatagField(mt));
+            (q.options || ['']).forEach(opt => addOptionField(opt));
             
             document.getElementById('save-btn').onclick = saveQuestion;
         }
 
-        function createDynamicField(container, placeholder, value, isComplex) {
+        function createDynamicField(container, placeholder, value) {
             const group = document.createElement('div');
             group.className = 'dynamic-field-group';
-            
             const count = container.querySelectorAll('.dynamic-field-group').length + 1;
             const label = document.createElement('span');
             label.className = 'field-label';
             label.textContent = `${count}.`;
-            
             const inputsDiv = document.createElement('div');
             inputsDiv.className = 'inputs';
-
-            if (isComplex) {
-                const valueInput = document.createElement('input');
-                valueInput.type = 'text';
-                valueInput.className = 'tag-value';
-                valueInput.placeholder = '태그값 (예: 명장동)';
-                valueInput.value = value.value || '';
-                const metaInput = document.createElement('input');
-                metaInput.type = 'text';
-                metaInput.className = 'tag-meta';
-                metaInput.placeholder = '메타태그 (예: 위치)';
-                metaInput.value = value.meta || '';
-                inputsDiv.appendChild(valueInput);
-                inputsDiv.appendChild(metaInput);
-            } else {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = placeholder;
-                input.value = value;
-                inputsDiv.appendChild(input);
-            }
-
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = placeholder;
+            input.value = value;
+            inputsDiv.appendChild(input);
             const removeBtn = document.createElement('button');
             removeBtn.className = 'remove-btn';
             removeBtn.textContent = 'X';
-            removeBtn.onclick = () => {
-                group.remove();
-                updateFieldLabels(container);
-            };
-
+            removeBtn.onclick = () => { group.remove(); updateFieldLabels(container); };
             group.appendChild(label);
             group.appendChild(inputsDiv);
             group.appendChild(removeBtn);
@@ -569,9 +522,10 @@
             });
         }
         
-        function addKeywordField(value = '') { createDynamicField(document.getElementById('q-keywords-container'), '키워드 (예: 명장초등학교)', value, false); }
-        function addOptionField(value = '') { createDynamicField(document.getElementById('q-options-container'), '보기 내용', value, false); }
-        function addTagField(meta = '', value = '') { createDynamicField(document.getElementById('q-tags-container'), '', {meta, value}, true); }
+        function addKeywordField(value = '') { createDynamicField(document.getElementById('q-keywords-container'), '키워드 (예: 명장초등학교)', value); }
+        function addTagField(value = '') { createDynamicField(document.getElementById('q-tags-container'), '태그값 (예: 명장동)', value); }
+        function addMetatagField(value = '') { createDynamicField(document.getElementById('q-metatags-container'), '메타태그 (예: 위치)', value); }
+        function addOptionField(value = '') { createDynamicField(document.getElementById('q-options-container'), '보기 내용', value); }
 
         function populatePartSelect(selectedValue) {
             const select = document.getElementById('q-part');
@@ -584,7 +538,7 @@
             });
         }
 
-        async function saveQuestion() {
+       async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
             const data = {
                 text: document.getElementById('q-text').value.trim(),
@@ -592,10 +546,8 @@
                 explanation: document.getElementById('q-explanation').value.trim(),
                 partName: document.getElementById('q-part').value,
                 keywords: Array.from(document.querySelectorAll('#q-keywords-container input')).map(i => i.value.trim()).filter(Boolean),
-                tags: Array.from(document.querySelectorAll('#q-tags-container .dynamic-field-group')).map(g => ({
-                    value: g.querySelector('.tag-value').value.trim(),
-                    meta: g.querySelector('.tag-meta').value.trim()
-                })).filter(t => t.meta && t.value),
+                tags: Array.from(document.querySelectorAll('#q-tags-container input')).map(i => i.value.trim()).filter(Boolean),
+                metatags: Array.from(document.querySelectorAll('#q-metatags-container input')).map(i => i.value.trim()).filter(Boolean),
                 options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean)
             };
 
@@ -618,10 +570,7 @@
                         const newCount = (subjectData.partCounters[partCode] || 0) + 1;
                         data.fixedId = `${subjectData.subjectCode}-${partCode}-${String(newCount).padStart(3, '0')}`;
                         t.set(newDocRef, data);
-                        t.update(subjectRef, { 
-                            questionCount: firebase.firestore.FieldValue.increment(1), 
-                            [`partCounters.${partCode}`]: newCount 
-                        });
+                        t.update(subjectRef, { questionCount: firebase.firestore.FieldValue.increment(1), [`partCounters.${partCode}`]: newCount });
                     });
                     data.id = newDocRef.id;
                     allQuestionsForSubject.push(data);
@@ -629,10 +578,7 @@
                     alert('문제가 추가되었습니다.');
                 }
                 await showManagementView({ refetch: false });
-            } catch(e) {
-                console.error("저장 중 오류 발생:", e);
-                alert("저장 중 오류가 발생했습니다.");
-            }
+            } catch(e) { console.error("저장 중 오류 발생:", e); alert("저장 중 오류가 발생했습니다."); }
         }
         
         function selectByRange() {
