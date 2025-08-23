@@ -38,15 +38,69 @@
         .final-result h2 { font-size: 2em; margin-bottom: 10px; }
         .final-result p { font-size: 1.2em; }
         
-        .tree-container ul { list-style-type: none; padding-left: 20px; }
-        .tree-container .tree-node { padding: 5px; border-radius: 4px; }
-        .tree-container .expandable { cursor: pointer; }
-        .tree-container .expandable:hover { background-color: #f0f2f5; }
-        .tree-container .expandable::before { content: '▶ '; font-size: 0.8em; }
-        .tree-container .expandable.expanded::before { content: '▼ '; }
-        .tree-container .tree-node ul { display: none; }
-        .tree-container .tree-node.expanded > ul { display: block; }
-        .tree-container .tags-keywords { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
+        /* --- ✨ Tree-view 스타일 수정 ✨ --- */
+        .tree-container { padding: 10px; }
+        .tree-container ul {
+            padding-left: 1em;
+            list-style: none;
+            position: relative;
+        }
+        .tree-container ul ul {
+            margin-left: .5em;
+        }
+        .tree-container li {
+            position: relative;
+            padding: 4px 0 4px 1.2em;
+            line-height: 1.5;
+        }
+        .tree-container li::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-left: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            width: 1em;
+            height: 1em;
+        }
+        .tree-container li::after {
+            content: "";
+            position: absolute;
+            top: 1em;
+            left: 0;
+            bottom: 0;
+            border-left: 1px solid #ccc;
+        }
+        .tree-container li:last-child::after {
+            display: none;
+        }
+        .tree-container .node-text.expandable {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tree-container .node-text.expandable:hover {
+            color: #0d6efd;
+        }
+        .tree-container .node-text.expandable::before {
+            content: '[+] ';
+            font-size: 0.9em;
+        }
+        .tree-container .expanded > .node-text.expandable::before {
+            content: '[-] ';
+        }
+        .tree-container .expanded > ul {
+            display: block;
+        }
+        .tree-container li > ul {
+            display: none;
+        }
+        .tree-container .tags-keywords {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-left: 8px;
+            font-style: italic;
+        }
+        /* --- 여기까지 --- */
     </style>
 </head>
 <body>
@@ -55,9 +109,7 @@
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
             <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        
         <div id="subject-view"><h2>과목 선택</h2><div id="subject-list"></div></div>
-        
         <div id="quiz-view" class="hidden">
             <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
             <div id="quiz-body"></div>
@@ -67,7 +119,6 @@
             <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
-        
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
             <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
@@ -77,14 +128,12 @@
             <div id="question-list-container"></div>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
-        
         <div id="tree-view" class="hidden">
             <h2>🌳 지식 트리</h2>
             <div id="tree-container">지식 트리 로딩 중...</div>
             <hr>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">↩️ 문제 관리로</button>
         </div>
-
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
@@ -106,7 +155,6 @@
             <button id="save-btn" class="button primary-button">저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
-        
         <div id="bulk-add-view" class="hidden">
             <h2>📚 여러 문제 추가</h2>
             <div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div>
@@ -132,6 +180,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
     <script>
     
         const firebaseConfig = {
@@ -307,7 +356,6 @@
             feedbackDiv.appendChild(nextButton);
         }
 
-        // --- ✨ 지식 트리 기능 관련 JavaScript 추가 ---
         async function showTreeView() {
             showView('tree-view');
             const container = document.getElementById('tree-container');
@@ -326,20 +374,20 @@
             });
 
             let treeHTML = '<ul>';
-            treeHTML += `<li class="tree-node expandable expanded"><span class="node-text">${currentSubjectData.name}</span><ul>`;
+            treeHTML += `<li class="expanded"><span class="node-text expandable">${currentSubjectData.name}</span><ul>`;
             
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
 
             sortedPartNames.forEach(partName => {
                 if(!parts[partName]) return;
 
-                treeHTML += `<li class="tree-node expandable"><span class="node-text">${partName}</span><ul>`;
+                treeHTML += `<li><span class="node-text expandable">${partName}</span><ul>`;
 
                 parts[partName].forEach(q => {
                     const tagsAndKeywords = [...(q.tags || []), ...(q.keywords || [])];
                     const tagString = tagsAndKeywords.length > 0 ? `[${tagsAndKeywords.join(', ')}]` : '';
 
-                    treeHTML += `<li class="tree-node">
+                    treeHTML += `<li>
                                     <span class="node-text">${q.fixedId}. ${q.text}</span>
                                     <span class="tags-keywords">${tagString}</span>
                                  </li>`;
@@ -352,9 +400,13 @@
 
             container.innerHTML = treeHTML;
             container.addEventListener('click', function(e) {
-                const targetNode = e.target.closest('.expandable');
-                if (targetNode) {
-                    targetNode.classList.toggle('expanded');
+                // ✨ 클릭한 대상이 .expandable 클래스를 가진 경우에만 작동하도록 수정 ✨
+                if (e.target.classList.contains('expandable')) {
+                    // 클릭된 요소의 부모 li에 expanded 클래스를 토글
+                    const parentLi = e.target.closest('li');
+                    if (parentLi) {
+                        parentLi.classList.toggle('expanded');
+                    }
                 }
             });
         }
