@@ -635,16 +635,6 @@
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
         }
 
-        function addOptionField(value = '') {
-            const container = document.getElementById('q-options-container');
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'form-group';
-            input.style.marginBottom = '10px';
-            input.value = value;
-            container.appendChild(input);
-        }
-
         function populatePartSelect(selectedValue) {
             const select = document.getElementById('q-part');
             select.innerHTML = '';
