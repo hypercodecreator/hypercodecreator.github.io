@@ -166,12 +166,12 @@
         async function startQuiz(id, questions = null) {
             if (id) {
                 await manageSubject(id);
-                quizQuestions = [...allQuestionsForSubject].sort(() => 0.5 - Math.random()); // 문제 순서 섞기
+                quizQuestions = [...allQuestionsForSubject].sort(() => 0.5 - Math.random());
             } else {
                 quizQuestions = questions.sort(() => 0.5 - Math.random());
             }
             currentQuizIndex = 0;
-            quizScore = 0; // 퀴즈 시작 시 점수 초기화
+            quizScore = 0;
             showView('quiz-view');
             displayCurrentQuiz();
         }
@@ -209,8 +209,8 @@
             const quizBody = document.getElementById('quiz-body');
             const feedbackDiv = document.getElementById('immediate-feedback');
             selectedOption = null;
-            feedbackDiv.innerHTML = ''; // 피드백 영역 초기화
-            feedbackDiv.className = '';   // 피드백 영역 클래스(색상) 초기화
+            feedbackDiv.innerHTML = '';
+            feedbackDiv.className = '';
 
             if (currentQuizIndex >= quizQuestions.length) {
                 quizBody.innerHTML = `
@@ -239,6 +239,23 @@
             });
             document.getElementById('submit-btn').onclick = submitAnswer;
         }
+
+            const data = quizQuestions[currentQuizIndex];
+            let optionsHTML = '';
+            (data.options || []).forEach(opt => { optionsHTML += `<div class="option">${opt}</div>`; });
+            
+            quizBody.innerHTML = `<h4>${data.fixedId || (currentQuizIndex + 1)}. ${data.text}</h4><div>${optionsHTML}</div>`;
+            feedbackDiv.innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
+            
+            document.querySelectorAll('.option').forEach(li => { 
+                li.onclick = (e) => {  
+                    document.querySelector('.option.selected')?.classList.remove('selected');
+                    e.currentTarget.classList.add('selected');
+                    selectedOption = e.currentTarget.textContent;
+                }
+            });
+            document.getElementById('submit-btn').onclick = submitAnswer;
+        }
         
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요."); return; }
@@ -247,7 +264,7 @@
             const feedbackDiv = document.getElementById('immediate-feedback');
             
             if (isCorrect) {
-                quizScore++; // 정답 시 점수 증가
+                quizScore++;
                 feedbackDiv.className = 'feedback correct';
                 feedbackDiv.innerHTML = `<p><strong>정답입니다!</strong></p>`;
             } else {
@@ -257,7 +274,7 @@
             if (data.explanation) feedbackDiv.innerHTML += `<p>해설: ${data.explanation}</p>`;
             
             document.querySelectorAll('.option').forEach(opt => { 
-                opt.style.cursor = 'default'; // 클릭 비활성화
+                opt.style.cursor = 'default';
                 opt.onclick = null;  
                 if (opt.textContent === data.answer) opt.style.cssText += 'background-color: #d1e7dd; border-color: #198754;';
                 else if (opt.textContent === selectedOption) opt.style.cssText += 'background-color: #f8d7da; border-color: #dc3545;';
@@ -486,10 +503,10 @@
             document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
             ['q-keywords-container', 'q-tags-container', 'q-metatags-container', 'q-options-container'].forEach(id => document.getElementById(id).innerHTML = '');
-            (q.keywords && q.keywords.length > 0 ? q.keywords : ['']).forEach(kw => addKeywordField(kw));
-            (q.tags && q.tags.length > 0 ? q.tags : ['']).forEach(t => addTagField(t));
-            (q.metatags && q.metatags.length > 0 ? q.metatags : ['']).forEach(mt => addMetatagField(mt));
-            (q.options && q.options.length > 0 ? q.options : ['']).forEach(opt => addOptionField(opt));
+            (q.keywords || ['']).forEach(kw => addKeywordField(kw));
+            (q.tags || ['']).forEach(t => addTagField(t));
+            (q.metatags || ['']).forEach(mt => addMetatagField(mt));
+            (q.options || ['']).forEach(opt => addOptionField(opt));
             document.getElementById('save-btn').onclick = saveQuestion;
         }
 
@@ -559,6 +576,7 @@
                     if (index > -1) allQuestionsForSubject[index] = { ...allQuestionsForSubject[index], id, ...data };
                     alert('문제가 수정되었습니다.');
                 } else {
+                    // 새 문제 추가 로직은 기존과 동일
                     const subjectRef = db.collection('subjects').doc(currentSubjectId);
                     const newDocRef = subjectRef.collection('questions').doc();
                     await db.runTransaction(async t => {
@@ -635,8 +653,6 @@
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
         }
 
-        
-        
         function addOptionField(value = '') {
             const container = document.getElementById('q-options-container');
             const input = document.createElement('input');
