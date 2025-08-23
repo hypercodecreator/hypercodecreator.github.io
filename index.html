@@ -239,23 +239,6 @@
             });
             document.getElementById('submit-btn').onclick = submitAnswer;
         }
-
-            const data = quizQuestions[currentQuizIndex];
-            let optionsHTML = '';
-            (data.options || []).forEach(opt => { optionsHTML += `<div class="option">${opt}</div>`; });
-            
-            quizBody.innerHTML = `<h4>${data.fixedId || (currentQuizIndex + 1)}. ${data.text}</h4><div>${optionsHTML}</div>`;
-            feedbackDiv.innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
-            
-            document.querySelectorAll('.option').forEach(li => { 
-                li.onclick = (e) => {  
-                    document.querySelector('.option.selected')?.classList.remove('selected');
-                    e.currentTarget.classList.add('selected');
-                    selectedOption = e.currentTarget.textContent;
-                }
-            });
-            document.getElementById('submit-btn').onclick = submitAnswer;
-        }
         
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요."); return; }
@@ -576,7 +559,6 @@
                     if (index > -1) allQuestionsForSubject[index] = { ...allQuestionsForSubject[index], id, ...data };
                     alert('문제가 수정되었습니다.');
                 } else {
-                    // 새 문제 추가 로직은 기존과 동일
                     const subjectRef = db.collection('subjects').doc(currentSubjectId);
                     const newDocRef = subjectRef.collection('questions').doc();
                     await db.runTransaction(async t => {
