@@ -31,6 +31,9 @@
         .question-item-button { flex-shrink: 0; width: auto; margin: 0; padding: 6px 10px; font-size: 0.9em; }
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
+        .feedback { padding: 10px; margin-top: 15px; border-radius: 5px; }
+        .feedback.correct { background-color: #d1e7dd; color: #0f5132; }
+        .feedback.incorrect { background-color: #f8d7da; color: #842029; }
     </style>
 </head>
 <body>
@@ -105,7 +108,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], currentQuiz = [], quizQuestions = [];
+        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], currentQuizIndex = 0, quizQuestions = [], selectedOption = null;
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
@@ -164,9 +167,13 @@
             await showManagementView({ refetch: true });
         }
         
-        async function startQuiz(id) {
-            await manageSubject(id); // 먼저 과목 정보를 로드
-            quizQuestions = [...allQuestionsForSubject];
+        async function startQuiz(id, questions = null) {
+            if (id) { // 일반 퀴즈 시작
+                await manageSubject(id);
+                quizQuestions = [...allQuestionsForSubject];
+            } else { // 특별 퀴즈 시작 (예: 취약점)
+                quizQuestions = questions;
+            }
             currentQuizIndex = 0;
             showView('quiz-view');
             displayCurrentQuiz();
@@ -203,40 +210,50 @@
 
         function displayCurrentQuiz() {
             const quizBody = document.getElementById('quiz-body');
-            document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 퀴즈`;
+            selectedOption = null;
             if (currentQuizIndex >= quizQuestions.length) {
                 quizBody.innerHTML = `<h2>퀴즈가 끝났습니다.</h2>`;
+                document.getElementById('immediate-feedback').innerHTML = '';
                 return;
             }
             const data = quizQuestions[currentQuizIndex];
             let optionsHTML = '';
             (data.options || []).forEach(opt => { optionsHTML += `<div class="option">${opt}</div>`; });
-            quizBody.innerHTML = `<h4>${data.fixedId}. ${data.text}</h4><div>${optionsHTML}</div>`;
+            quizBody.innerHTML = `<h4>${data.fixedId || (currentQuizIndex + 1)}. ${data.text}</h4><div>${optionsHTML}</div>`;
+            document.getElementById('immediate-feedback').innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
+            document.querySelectorAll('.option').forEach(li => { li.onclick = (e) => { 
+                document.querySelector('.option.selected')?.classList.remove('selected');
+                e.currentTarget.classList.add('selected');
+                selectedOption = e.currentTarget.textContent;
+            }});
+            document.getElementById('submit-btn').onclick = submitAnswer;
         }
         
         function submitAnswer() {
-            if (!selectedOption) { alert("보기를 선택해주세요!"); return; }
-            const data = questions[currentQuiz]; const isCorrect = selectedOption === data.answer;
-            if (immediateFeedbackMode) {
-                const feedbackDiv = document.getElementById('immediate-feedback');
-                let feedbackHTML = '';
-                if (isCorrect) {
-                    feedbackDiv.className = 'feedback correct';
-                    feedbackHTML = `<p><strong>정답입니다!</strong></p><p>이 문제를 얼마나 확실하게 알고 있었나요?</p><div class="confidence-buttons"><button class="button light-button" onclick="recordConfidence('${data.id}', 'confident')">확실함</button><button class="button light-button" onclick="recordConfidence('${data.id}', 'unsure')">애매함</button><button class="button light-button" onclick="recordConfidence('${data.id}', 'guess')">찍음</button></div>`;
-                } else {
-                    feedbackDiv.className = 'feedback incorrect';
-                    feedbackHTML = `<p><strong>오답입니다.</strong></p><p>정답: ${data.answer}</p>`;
-                    if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
-                }
-                feedbackDiv.innerHTML = feedbackHTML;
-                displayConceptMap();
-                document.querySelectorAll('.option').forEach(opt => { opt.onclick = null; if (opt.textContent === data.answer) opt.style.borderColor = '#198754'; else if (opt.textContent === selectedOption) opt.style.borderColor = '#dc3545'; });
-                const nextButton = document.createElement('button');
-                nextButton.className = 'button primary-button';
-                nextButton.textContent = '다음 문제 →';
-                nextButton.onclick = () => { currentQuiz++; displayCurrentQuiz(); };
-                feedbackDiv.appendChild(nextButton);
-            } else { if (isCorrect) score++; currentQuiz++; displayCurrentQuiz(); }
+            if (!selectedOption) { alert("보기를 선택해주세요."); return; }
+            const data = quizQuestions[currentQuizIndex];
+            const isCorrect = selectedOption === data.answer;
+            const feedbackDiv = document.getElementById('immediate-feedback');
+            let feedbackHTML = '';
+            if (isCorrect) {
+                feedbackDiv.className = 'feedback correct';
+                feedbackHTML = `<p><strong>정답입니다!</strong></p>`;
+            } else {
+                feedbackDiv.className = 'feedback incorrect';
+                feedbackHTML = `<p><strong>오답입니다.</strong> 정답: ${data.answer}</p>`;
+            }
+            if (data.explanation) feedbackHTML += `<p>해설: ${data.explanation}</p>`;
+            feedbackDiv.innerHTML = feedbackHTML;
+            document.querySelectorAll('.option').forEach(opt => { 
+                opt.onclick = null; 
+                if (opt.textContent === data.answer) opt.style.cssText = 'background-color: #d1e7dd; border-color: #198754;';
+                else if (opt.textContent === selectedOption) opt.style.cssText = 'background-color: #f8d7da; border-color: #dc3545;';
+            });
+            const nextButton = document.createElement('button');
+            nextButton.className = 'button primary-button';
+            nextButton.textContent = '다음 문제 →';
+            nextButton.onclick = () => { currentQuizIndex++; displayCurrentQuiz(); };
+            feedbackDiv.appendChild(nextButton);
         }
 
         function displayConceptMap() {
@@ -414,58 +431,30 @@
 
         async function startWeaknessQuiz() {
             const user = auth.currentUser;
-            if (!user) {
-                alert('로그인이 필요합니다.');
-                return;
-            }
-
-            const quizBody = document.getElementById('quiz-body');
-            quizBody.innerHTML = '<p>취약점 분석 중...</p>';
+            if (!user) return alert('로그인이 필요합니다.');
+            showView('quiz-view');
+            document.getElementById('quiz-header').textContent = '취약점 분석 중...';
+            document.getElementById('quiz-body').innerHTML = '';
 
             try {
-                const ratingsSnapshot = await db.collection('users').doc(user.uid).collection('confidenceRatings')
-                    .where('subjectId', '==', currentSubjectId)
-                    .where('level', 'in', ['unsure', 'guess'])
-                    .get();
-
+                const ratingsSnapshot = await db.collection('users').doc(user.uid).collection('confidenceRatings').where('subjectId', '==', currentSubjectId).where('level', 'in', ['unsure', 'guess']).get();
                 if (ratingsSnapshot.empty) {
-                    quizBody.innerHTML = '<h2>🎉 이 과목에는 등록된 취약점이 없습니다!</h2><p>퀴즈를 풀며 자신감도를 기록해보세요.</p>';
+                    document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
+                    document.getElementById('quiz-body').innerHTML = '<h2>🎉 이 과목에는 등록된 취약점이 없습니다!</h2>';
                     return;
                 }
-
                 const weakQuestionIds = ratingsSnapshot.docs.map(doc => doc.id);
-                
-                const fetchPromises = [];
-                for (let i = 0; i < weakQuestionIds.length; i += 10) {
-                    const chunk = weakQuestionIds.slice(i, i + 10);
-                    fetchPromises.push(
-                        db.collection('subjects').doc(currentSubjectId).collection('questions')
-                        .where(firebase.firestore.FieldPath.documentId(), 'in', chunk)
-                        .get()
-                    );
-                }
-                
-                const questionSnapshots = await Promise.all(fetchPromises);
-                
-                const weakQuestions = [];
-                questionSnapshots.forEach(snapshot => {
-                    snapshot.forEach(doc => weakQuestions.push({ id: doc.id, ...doc.data() }));
-                });
-
+                const weakQuestions = allQuestionsForSubject.filter(q => weakQuestionIds.includes(q.id));
                 if (weakQuestions.length === 0) {
-                    quizBody.innerHTML = '<h2>문제를 찾을 수 없습니다.</h2><p>삭제되었거나 ID가 변경된 문제일 수 있습니다.</p>';
+                    document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
+                    document.getElementById('quiz-body').innerHTML = '<h2>문제를 찾을 수 없습니다.</h2><p>삭제되었거나 ID가 변경된 문제일 수 있습니다.</p>';
                     return;
                 }
-
-                questions = weakQuestions.sort((a, b) => (a.fixedId > b.fixedId) ? 1 : -1);
-                score = 0;
-                currentQuiz = 0;
+                startQuiz(null, weakQuestions);
                 document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
-                await displayCurrentQuiz();
-
             } catch (error) {
                 console.error("취약점 퀴즈 로딩 중 오류:", error);
-                quizBody.innerHTML = '<p>취약점 문제를 불러오는 중 오류가 발생했습니다.</p>';
+                document.getElementById('quiz-body').innerHTML = '<p>취약점 문제를 불러오는 중 오류가 발생했습니다.</p>';
             }
         }
 
@@ -482,13 +471,11 @@
             document.getElementById('q-answer').value = q.answer || '';
             document.getElementById('q-explanation').value = q.explanation || '';
             populatePartSelect(q.partName);
-
             ['q-keywords-container', 'q-tags-container', 'q-metatags-container', 'q-options-container'].forEach(id => document.getElementById(id).innerHTML = '');
-            (q.keywords || ['']).forEach(kw => addKeywordField(kw));
-            (q.tags || ['']).forEach(t => addTagField(t));
-            (q.metatags || ['']).forEach(mt => addMetatagField(mt));
-            (q.options || ['']).forEach(opt => addOptionField(opt));
-            
+            (q.keywords && q.keywords.length > 0 ? q.keywords : ['']).forEach(kw => addKeywordField(kw));
+            (q.tags && q.tags.length > 0 ? q.tags : ['']).forEach(t => addTagField(t));
+            (q.metatags && q.metatags.length > 0 ? q.metatags : ['']).forEach(mt => addMetatagField(mt));
+            (q.options && q.options.length > 0 ? q.options : ['']).forEach(opt => addOptionField(opt));
             document.getElementById('save-btn').onclick = saveQuestion;
         }
 
@@ -550,9 +537,7 @@
                 metatags: Array.from(document.querySelectorAll('#q-metatags-container input')).map(i => i.value.trim()).filter(Boolean),
                 options: Array.from(document.querySelectorAll('#q-options-container input')).map(i => i.value.trim()).filter(Boolean)
             };
-
             if (!data.text || !data.answer || !data.partName) { alert("문제 내용, 정답, 소속 파트는 필수 항목입니다."); return; }
-
             try {
                 if (id) {
                     await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
