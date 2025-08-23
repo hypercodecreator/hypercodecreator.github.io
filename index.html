@@ -539,23 +539,7 @@
             });
         }
         
-        function addKeywordField(value = '') { createDynamicField(document.getElementById('q-keywords-container'), '키워드 (예: 명장초등학교)', value); }
-        function addTagField(value = '') { createDynamicField(document.getElementById('q-tags-container'), '태그값 (예: 명장동)', value); }
-        function addMetatagField(value = '') { createDynamicField(document.getElementById('q-metatags-container'), '메타태그 (예: 위치)', value); }
-        function addOptionField(value = '') { createDynamicField(document.getElementById('q-options-container'), '보기 내용', value); }
-
-        function populatePartSelect(selectedValue) {
-            const select = document.getElementById('q-part');
-            select.innerHTML = '';
-            (currentSubjectData.partOrder || []).forEach(part => {
-                const opt = document.createElement('option');
-                opt.value = part; opt.textContent = part;
-                if (part === selectedValue) opt.selected = true;
-                select.appendChild(opt);
-            });
-        }
-
-       async function saveQuestion() {
+        async function saveQuestion() {
             const id = document.getElementById('editing-question-id').value;
             const data = {
                 text: document.getElementById('q-text').value.trim(),
@@ -651,13 +635,7 @@
              else { alert('추가할 문제를 찾지 못했습니다. 양식을 확인해주세요.'); }
         }
 
-        function addTagField(meta = '', value = '') {
-            const container = document.getElementById('q-tags-container');
-            const div = document.createElement('div');
-            div.className = 'tag-group';
-            div.innerHTML = `<input type="text" class="tag-meta" placeholder="메타태그 (예: 위치)" value="${meta}"><input type="text" class="tag-value" placeholder="태그값 (예: 명장동)" value="${value}">`;
-            container.appendChild(div);
-        }
+        
         
         function addOptionField(value = '') {
             const container = document.getElementById('q-options-container');
