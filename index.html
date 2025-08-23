@@ -37,6 +37,18 @@
         .final-result { text-align: center; padding: 20px; }
         .final-result h2 { font-size: 2em; margin-bottom: 10px; }
         .final-result p { font-size: 1.2em; }
+        
+        /* --- ✨ Tree-view 스타일 추가 --- */
+        .tree-container ul { list-style-type: none; padding-left: 20px; }
+        .tree-container .tree-node { padding: 5px; border-radius: 4px; }
+        .tree-container .expandable { cursor: pointer; }
+        .tree-container .expandable:hover { background-color: #f0f2f5; }
+        .tree-container .expandable::before { content: '▶ '; font-size: 0.8em; }
+        .tree-container .expandable.expanded::before { content: '▼ '; }
+        .tree-container .tree-node ul { display: none; }
+        .tree-container .tree-node.expanded > ul { display: block; }
+        .tree-container .tags-keywords { font-size: 0.8em; color: #6c757d; margin-left: 8px; }
+        /* --- 여기까지 --- */
     </style>
 </head>
 <body>
@@ -49,49 +61,34 @@
         <div id="subject-view"><h2>과목 선택</h2><div id="subject-list"></div></div>
         
         <div id="quiz-view" class="hidden">
-            <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
-            <div id="quiz-body"></div>
-            <div id="immediate-feedback"></div>
-            <hr style="margin:20px 0;">
-            <button class="button secondary-button" onclick="showManagementView({ refetch: true })">📋 문제 관리</button>
-            <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
-        </div>
+            </div>
         
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
             <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
             <button class="button primary-button" onclick="showBulkAddView()">+ 여러 문제 추가</button>
+            <button class="button light-button" onclick="showTreeView()">🌳 지식 트리 보기</button> 
             <hr>
             <div id="question-list-container"></div>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
         
-        <div id="add-edit-view" class="hidden">
-            <h2 id="add-edit-header"></h2>
-            <input type="hidden" id="editing-question-id">
-            <h4>1. 문제 정보</h4>
-            <div class="form-group"><label for="q-text">문제 내용</label><textarea id="q-text" rows="3" placeholder="예: 명장초등학교가 속한 행정구역은?"></textarea></div>
-            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
-            <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-part">소속 파트</label><select id="q-part"></select></div>
+        <div id="tree-view" class="hidden">
+            <h2>🌳 지식 트리</h2>
+            <div id="tree-container">지식 트리 로딩 중...</div>
             <hr>
-            <h4>2. 개념 분석 (선택)</h4>
-            <div class="form-group"><label>구조화된 키워드</label><div id="q-keywords-container"></div><button class="button light-button" onclick="addKeywordField()">+ 키워드 추가</button></div>
-            <div class="form-group"><label>구조화된 태그</label><div id="q-tags-container"></div><button class="button light-button" onclick="addTagField()">+ 태그 추가</button></div>
-            <div class="form-group"><label>구조화된 메타태그</label><div id="q-metatags-container"></div><button class="button light-button" onclick="addMetatagField()">+ 메타태그 추가</button></div>
-            <hr>
-            <h4>3. 객관식 보기 (선택)</h4>
-            <div id="q-options-container"></div>
-            <button class="button light-button" onclick="addOptionField()">+ 보기 추가</button>
-            <hr>
-            <button id="save-btn" class="button primary-button">저장</button>
-            <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
+            <button class="button light-button" onclick="showManagementView({ refetch: false })">↩️ 문제 관리로</button>
         </div>
+
+        <div id="add-edit-view" class="hidden">
+            </div>
         
-        <div id="bulk-add-view" class="hidden"><h2>📚 여러 문제 추가</h2><div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div><button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button><button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button></div>
-        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
-        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="bulk-add-view" class="hidden">
+            </div>
+        <div id="signup-view" class="hidden">
+            </div>
+        <div id="login-view" class="hidden">
+            </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -99,20 +96,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
         
-        const firebaseConfig = {
-  apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
-  authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
-  projectId: "my-cbt-app-2cdb9",
-  storageBucket: "my-cbt-app-2cdb9.firebasestorage.app",
-  messagingSenderId: "1091430877229",
-  appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
-};
-        
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
         let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], currentQuizIndex = 0, quizQuestions = [], selectedOption = null, quizScore = 0;
-        const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view'];
+        // ✨ views 목록에 'tree-view' 추가 ✨
+        const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
         
@@ -153,7 +142,10 @@
             if (!doc.exists) return;
             currentSubjectId = id;
             currentSubjectData = doc.data();
-            await showManagementView({ refetch: true });
+            // ✨ 현재 과목의 모든 문제를 미리 불러오도록 수정 ✨
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
+            allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            await showManagementView({ refetch: false }); // refetch false로 변경
         }
         
        // 과목 선택 및 문제 로드
@@ -270,6 +262,67 @@
             feedbackDiv.appendChild(nextButton);
         }
 
+        // --- ✨ 지식 트리 기능 관련 JavaScript 추가 ---
+        async function showTreeView() {
+            showView('tree-view');
+            const container = document.getElementById('tree-container');
+
+            // 이미 트리가 생성되었다면 다시 로드하지 않음
+            if (container.innerHTML !== '지식 트리 로딩 중...') {
+                return;
+            }
+
+            // 1. 데이터 그룹핑: allQuestionsForSubject 데이터를 파트별로 그룹핑
+            const parts = {};
+            allQuestionsForSubject.forEach(q => {
+                const partName = q.partName || '미지정 파트';
+                if (!parts[partName]) {
+                    parts[partName] = [];
+                }
+                parts[partName].push(q);
+            });
+
+            // 2. HTML 문자열 생성
+            let treeHTML = '<ul>';
+            
+            // 현재 과목 노드
+            treeHTML += `<li class="tree-node expandable expanded"><span class="node-text">${currentSubjectData.name}</span><ul>`;
+            
+            const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
+
+            sortedPartNames.forEach(partName => {
+                if(!parts[partName]) return; // 해당 파트에 문제가 없으면 건너뛰기
+
+                // 파트 노드
+                treeHTML += `<li class="tree-node expandable"><span class="node-text">${partName}</span><ul>`;
+
+                parts[partName].forEach(q => {
+                    // 태그와 키워드를 합쳐서 문자열로 만듦
+                    const tagsAndKeywords = [...(q.tags || []), ...(q.keywords || [])];
+                    const tagString = tagsAndKeywords.length > 0 ? `[${tagsAndKeywords.join(', ')}]` : '';
+
+                    // 문제 노드
+                    treeHTML += `<li class="tree-node">
+                                    <span class="node-text">${q.fixedId}. ${q.text}</span>
+                                    <span class="tags-keywords">${tagString}</span>
+                                 </li>`;
+                });
+                treeHTML += '</ul></li>'; // 파트 ul, li 닫기
+            });
+
+            treeHTML += '</ul></li>'; // 과목 ul, li 닫기
+            treeHTML += '</ul>';
+
+            // 3. HTML 삽입 및 이벤트 리스너 추가
+            container.innerHTML = treeHTML;
+            container.addEventListener('click', function(e) {
+                const targetNode = e.target.closest('.expandable');
+                if (targetNode) {
+                    targetNode.classList.toggle('expanded');
+                }
+            });
+        }
+        
         function displayConceptMap() {
             const mapContainer = document.getElementById('concept-map');
             const mapContent = document.getElementById('map-content');
