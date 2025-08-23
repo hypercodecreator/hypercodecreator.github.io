@@ -451,8 +451,19 @@
             document.getElementById('quiz-body').innerHTML = '';
 
             try {
-                // 이 부분은 기존 로직과 동일하게 유지됩니다.
-                // ...
+                const ratingsSnapshot = await db.collection('users').doc(user.uid).collection('confidenceRatings').where('subjectId', '==', currentSubjectId).where('level', 'in', ['unsure', 'guess']).get();
+                if (ratingsSnapshot.empty) {
+                    document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
+                    document.getElementById('quiz-body').innerHTML = '<h2>🎉 이 과목에는 등록된 취약점이 없습니다!</h2>';
+                    return;
+                }
+                const weakQuestionIds = ratingsSnapshot.docs.map(doc => doc.id);
+                const weakQuestions = allQuestionsForSubject.filter(q => weakQuestionIds.includes(q.id));
+                if (weakQuestions.length === 0) {
+                    document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
+                    document.getElementById('quiz-body').innerHTML = '<h2>문제를 찾을 수 없습니다.</h2><p>삭제되었거나 ID가 변경된 문제일 수 있습니다.</p>';
+                    return;
+                }
                 startQuiz(null, weakQuestions);
                 document.getElementById('quiz-header').textContent = `[${currentSubjectData.name}] 취약점 공략`;
             } catch (error) {
