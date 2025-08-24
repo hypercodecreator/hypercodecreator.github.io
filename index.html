@@ -61,14 +61,12 @@
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
             <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        
         <div id="subject-view">
             <h2>과목 선택</h2>
             <div id="subject-list"></div>
         </div>
-        
         <div id="quiz-view" class="hidden">
-            <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
+             <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
             <div id="quiz-body"></div>
             <div id="immediate-feedback"></div>
             <hr style="margin:20px 0;">
@@ -76,7 +74,6 @@
             <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
-        
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
             <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
@@ -86,14 +83,12 @@
             <div id="question-list-container"></div>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
-
         <div id="tree-view" class="hidden">
             <h2>🌳 지식 트리</h2>
             <div id="tree-container">지식 트리 로딩 중...</div>
             <hr>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">↩️ 문제 관리로</button>
         </div>
-
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
@@ -115,7 +110,6 @@
             <button id="save-btn" class="button primary-button">저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
-
         <div id="bulk-add-view" class="hidden">
              <h2>📚 여러 문제 추가</h2>
             <div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div>
@@ -159,12 +153,12 @@
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
-       
+        
         auth.onAuthStateChanged(user => {
             const loggedInView = document.getElementById('logged-in-view');
             const loggedOutView = document.getElementById('logged-out-view');
-            if(loggedInView) loggedInView.classList.toggle('hidden', !user);
-            if(loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
+            if (loggedInView) loggedInView.classList.toggle('hidden', !user);
+            if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
             if (user) {
                 document.getElementById('user-email').textContent = `${user.email}님`;
                 loadSubjects();
@@ -319,7 +313,6 @@
         async function showTreeView() {
             showView('tree-view');
             const container = document.getElementById('tree-container');
-
             if (container.innerHTML !== '지식 트리 로딩 중...') return;
 
             const parts = {};
@@ -335,7 +328,6 @@
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
             sortedPartNames.forEach(partName => {
                 if (!parts[partName]) return;
-
                 treeHTML += `<li class="expandable"><span class="node-text">${partName}</span><ul>`;
                 parts[partName].forEach(q => {
                     const tagsAndKeywords = [...(q.tags || []), ...(q.keywords || [])];
@@ -384,19 +376,7 @@
             displayCurrentQuiz();
         }
 
-        async function showTreeView() {
-            showView('tree-view');
-            const container = document.getElementById('tree-container');
-            container.innerHTML = '지식 체계 로딩 중...';
-            const subjectsSnapshot = await db.collection('subjects').orderBy('name').get();
-            let treeHTML = '<ul>';
-            subjectsSnapshot.forEach(doc => {
-                const subject = doc.data();
-                treeHTML += `<li class="tree-node subject-node" onclick="toggleSubjectNode(event, '${doc.id}')">${subject.name}</li>`;
-            });
-            treeHTML += '</ul>';
-            container.innerHTML = treeHTML;
-        }
+        
 
         async function toggleSubjectNode(event, subjectId) {
             event.stopPropagation();
