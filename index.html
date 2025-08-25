@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -313,7 +314,9 @@
         async function showTreeView() {
             showView('tree-view');
             const container = document.getElementById('tree-container');
-            if (container.innerHTML !== '지식 트리 로딩 중...') return;
+            
+            // ✨ 항상 트리를 새로 그리도록 수정 ✨
+            container.innerHTML = ''; // 기존 내용을 비움
 
             const parts = {};
             allQuestionsForSubject.forEach(q => {
@@ -330,8 +333,9 @@
                 if (!parts[partName]) return;
                 treeHTML += `<li class="expandable"><span class="node-text">${partName}</span><ul>`;
                 parts[partName].forEach(q => {
-                    const tagsAndKeywords = [...(q.tags || []), ...(q.keywords || [])];
-                    const tagString = tagsAndKeywords.length > 0 ? `[${tagsAndKeywords.join(', ')}]` : '';
+                    // ✨ 메타태그까지 포함하도록 수정 ✨
+                    const allTags = [...(q.keywords || []), ...(q.tags || []), ...(q.metatags || [])];
+                    const tagString = allTags.length > 0 ? `[${allTags.join(', ')}]` : '';
                     treeHTML += `<li><span class="node-text">${q.fixedId}. ${q.text}</span><span class="tags-keywords">${tagString}</span></li>`;
                 });
                 treeHTML += '</ul></li>';
@@ -621,7 +625,10 @@
                 if (id) {
                     await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
                     const index = allQuestionsForSubject.findIndex(q => q.id === id);
-                    if (index > -1) allQuestionsForSubject[index] = { ...allQuestionsForSubject[index], id, ...data };
+                    if (index > -1) {
+                        // ✨ 로컬 데이터도 완벽하게 업데이트 되도록 수정 ✨
+                        allQuestionsForSubject[index] = { ...allQuestionsForSubject[index], ...data };
+                    }
                     alert('문제가 수정되었습니다.');
                 } else {
                     const subjectRef = db.collection('subjects').doc(currentSubjectId);
