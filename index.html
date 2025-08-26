@@ -53,7 +53,20 @@
         #tree-container li.expandable.expanded::before { content: "[-] "; }
         #tree-container li.expandable.expanded > ul { display: block; }
         #tree-container li > ul { display: none; }
-        #tree-container .tags-keywords { font-size: 0.8em; color: #6c757d; margin-left: 8px; font-style: italic; }
+        
+        /* ✨ tags-keywords -> concept-badges-container로 이름 변경 및 스타일 추가 ✨ */
+        #tree-container .concept-badges-container { display: block; padding-left: 1.2em; margin-top: 4px; }
+        .concept-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 0.75em;
+            border-radius: 10px;
+            margin-right: 5px;
+            margin-bottom: 4px;
+        }
+        .badge-keyword { background-color: #e0eaff; color: #4361ee; }
+        .badge-tag { background-color: #dcfce7; color: #16a34a; }
+        .badge-metatag { background-color: #fefce8; color: #b45309; }
     </style>
 </head>
 <body>
@@ -315,8 +328,7 @@
             showView('tree-view');
             const container = document.getElementById('tree-container');
             
-            // ✨ 항상 트리를 새로 그리도록 수정 ✨
-            container.innerHTML = ''; // 기존 내용을 비움
+            container.innerHTML = ''; // 항상 새로 그림
 
             const parts = {};
             allQuestionsForSubject.forEach(q => {
@@ -326,23 +338,38 @@
             });
 
             let treeHTML = '<ul>';
-            treeHTML += `<li class="expandable expanded"><span class="node-text">${currentSubjectData.name}</span><ul>`;
+            // ✨ expanded 클래스를 여기서 제거 ✨
+            treeHTML += `<li class="expandable"><span class="node-text">${currentSubjectData.name}</span><ul>`;
             
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
             sortedPartNames.forEach(partName => {
                 if (!parts[partName]) return;
                 treeHTML += `<li class="expandable"><span class="node-text">${partName}</span><ul>`;
                 parts[partName].forEach(q => {
-                    // ✨ 메타태그까지 포함하도록 수정 ✨
-                    const allTags = [...(q.keywords || []), ...(q.tags || []), ...(q.metatags || [])];
-                    const tagString = allTags.length > 0 ? `[${allTags.join(', ')}]` : '';
-                    treeHTML += `<li><span class="node-text">${q.fixedId}. ${q.text}</span><span class="tags-keywords">${tagString}</span></li>`;
+                    // ✨ 개념들을 배지 스타일로 만드는 로직 추가 ✨
+                    let conceptsHTML = '';
+                    (q.keywords || []).forEach(kw => { conceptsHTML += `<span class="concept-badge badge-keyword">${kw}</span>`; });
+                    (q.tags || []).forEach(tag => { conceptsHTML += `<span class="concept-badge badge-tag">${tag}</span>`; });
+                    (q.metatags || []).forEach(mt => { conceptsHTML += `<span class="concept-badge badge-metatag">${mt}</span>`; });
+                    
+                    const conceptsContainer = conceptsHTML ? `<div class="concept-badges-container">${conceptsHTML}</div>` : '';
+
+                    treeHTML += `<li>
+                                    <span class="node-text">${q.fixedId}. ${q.text}</span>
+                                    ${conceptsContainer}
+                                 </li>`;
                 });
                 treeHTML += '</ul></li>';
             });
             treeHTML += '</ul></li></ul>';
 
             container.innerHTML = treeHTML;
+            
+            // ✨ JS로 명시적으로 최상위 노드를 펼치는 코드 추가 ✨
+            if (container.querySelector('li.expandable')) {
+                container.querySelector('li.expandable').classList.add('expanded');
+            }
+
             container.addEventListener('click', function(e) {
                 const targetLi = e.target.closest('.expandable');
                 if (targetLi) {
