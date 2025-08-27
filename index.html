@@ -206,7 +206,7 @@
             currentSubjectData = doc.data();
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
             allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await showManagementView({ refetch: false }); // ✨ 무한 루프 수정 ✨
+            await showManagementView({ refetch: false });
         }
         
        // 과목 선택 및 문제 로드
@@ -635,11 +635,6 @@
             try {
                 if (id) {
                     await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
-                    const index = allQuestionsForSubject.findIndex(q => q.id === id);
-                    if (index > -1) {
-                        // ✨ 로컬 데이터도 완벽하게 업데이트 되도록 수정 ✨
-                        allQuestionsForSubject[index] = { ...allQuestionsForSubject[index], ...data };
-                    }
                     alert('문제가 수정되었습니다.');
                 } else {
                     const subjectRef = db.collection('subjects').doc(currentSubjectId);
@@ -659,7 +654,7 @@
                     allQuestionsForSubject.sort((a,b) => a.fixedId.localeCompare(b.fixedId));
                     alert('문제가 추가되었습니다.');
                 }
-                await showManagementView({ refetch: false });
+                await manageSubject(currentSubjectId); // 데이터를 새로고침하고 관리 화면으로 이동
             } catch(e) { console.error("저장 중 오류 발생:", e); alert("저장 중 오류가 발생했습니다."); }
         }
         
