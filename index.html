@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -207,7 +206,7 @@
             currentSubjectData = doc.data();
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
             allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await showManagementView({ refetch: false });
+            await manageSubject(currentSubjectId);
         }
         
        // 과목 선택 및 문제 로드
