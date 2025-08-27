@@ -635,7 +635,6 @@
             try {
                 if (id) {
                     await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(id).update(data);
-                    alert('문제가 수정되었습니다.');
                 } else {
                     const subjectRef = db.collection('subjects').doc(currentSubjectId);
                     const newDocRef = subjectRef.collection('questions').doc();
@@ -652,7 +651,6 @@
                     data.id = newDocRef.id;
                     allQuestionsForSubject.push(data);
                     allQuestionsForSubject.sort((a,b) => a.fixedId.localeCompare(b.fixedId));
-                    alert('문제가 추가되었습니다.');
                 }
                 await manageSubject(currentSubjectId); // 데이터를 새로고침하고 관리 화면으로 이동
             } catch(e) { console.error("저장 중 오류 발생:", e); alert("저장 중 오류가 발생했습니다."); }
