@@ -206,7 +206,7 @@
             currentSubjectData = doc.data();
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('fixedId').get();
             allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await showManagementView({ refetch: false });
+            await showManagementView({ refetch: false }); // ✨ 무한 루프 수정 ✨
         }
         
        // 과목 선택 및 문제 로드
@@ -326,49 +326,34 @@
         async function showTreeView() {
             showView('tree-view');
             const container = document.getElementById('tree-container');
-            
-            container.innerHTML = ''; // 항상 새로 그림
-
+            container.innerHTML = ''; 
             const parts = {};
             allQuestionsForSubject.forEach(q => {
                 const partName = q.partName || '미지정 파트';
                 if (!parts[partName]) parts[partName] = [];
                 parts[partName].push(q);
             });
-
             let treeHTML = '<ul>';
-            // ✨ expanded 클래스를 여기서 제거 ✨
             treeHTML += `<li class="expandable"><span class="node-text">${currentSubjectData.name}</span><ul>`;
-            
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
             sortedPartNames.forEach(partName => {
                 if (!parts[partName]) return;
                 treeHTML += `<li class="expandable"><span class="node-text">${partName}</span><ul>`;
                 parts[partName].forEach(q => {
-                    // ✨ 개념들을 배지 스타일로 만드는 로직 추가 ✨
                     let conceptsHTML = '';
                     (q.keywords || []).forEach(kw => { conceptsHTML += `<span class="concept-badge badge-keyword">${kw}</span>`; });
                     (q.tags || []).forEach(tag => { conceptsHTML += `<span class="concept-badge badge-tag">${tag}</span>`; });
                     (q.metatags || []).forEach(mt => { conceptsHTML += `<span class="concept-badge badge-metatag">${mt}</span>`; });
-                    
                     const conceptsContainer = conceptsHTML ? `<div class="concept-badges-container">${conceptsHTML}</div>` : '';
-
-                    treeHTML += `<li>
-                                    <span class="node-text">${q.fixedId}. ${q.text}</span>
-                                    ${conceptsContainer}
-                                 </li>`;
+                    treeHTML += `<li><span class="node-text">${q.fixedId}. ${q.text}</span>${conceptsContainer}</li>`;
                 });
                 treeHTML += '</ul></li>';
             });
             treeHTML += '</ul></li></ul>';
-
             container.innerHTML = treeHTML;
-            
-            // ✨ JS로 명시적으로 최상위 노드를 펼치는 코드 추가 ✨
             if (container.querySelector('li.expandable')) {
                 container.querySelector('li.expandable').classList.add('expanded');
             }
-
             container.addEventListener('click', function(e) {
                 const targetLi = e.target.closest('.expandable');
                 if (targetLi) {
