@@ -327,12 +327,14 @@
             showView('tree-view');
             const container = document.getElementById('tree-container');
             container.innerHTML = ''; 
+
             const parts = {};
             allQuestionsForSubject.forEach(q => {
                 const partName = q.partName || '미지정 파트';
                 if (!parts[partName]) parts[partName] = [];
                 parts[partName].push(q);
             });
+
             let treeHTML = '<ul>';
             treeHTML += `<li class="expandable"><span class="node-text">${currentSubjectData.name}</span><ul>`;
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
@@ -351,16 +353,23 @@
             });
             treeHTML += '</ul></li></ul>';
             container.innerHTML = treeHTML;
+            
             if (container.querySelector('li.expandable')) {
                 container.querySelector('li.expandable').classList.add('expanded');
             }
-            container.addEventListener('click', function(e) {
-                const targetLi = e.target.closest('.expandable');
-                if (targetLi) {
-                    targetLi.classList.toggle('expanded');
-                }
-            });
         }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const treeContainer = document.getElementById('tree-container');
+            if (treeContainer) {
+                treeContainer.addEventListener('click', function(e) {
+                    const targetLi = e.target.closest('.expandable');
+                    if (targetLi) {
+                        targetLi.classList.toggle('expanded');
+                    }
+                });
+            }
+        });
         
         function displayConceptMap() {
             const mapContainer = document.getElementById('concept-map');
