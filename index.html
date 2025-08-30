@@ -66,9 +66,63 @@
         .badge-keyword { background-color: #e0eaff; color: #4361ee; }
         .badge-tag { background-color: #dcfce7; color: #16a34a; }
         .badge-metatag { background-color: #fefce8; color: #b45309; }
+
+        /* ✨ 점진적 학습 기능 스타일 추가 ✨ */
+        #goal-view {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        #goal-view h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .goal-setup {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .goal-setup input {
+            width: 80px;
+            text-align: center;
+        }
+        .goal-setup .button {
+            width: auto;
+            margin-top: 0;
+            padding: 10px 15px;
+        }
+        #goal-status {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        #goal-status .progress {
+            color: #0d6efd;
+        }
+        #goal-status .goal {
+            color: #6c757d;
+        }
+        
     </style>
 </head>
 <body>
+    <div class="container">
+        <div id="auth-container">
+            </div>
+        <div id="subject-view">
+            <h2>과목 선택</h2>
+            <div id="goal-view">
+                <h4>🎯 오늘의 학습 목표</h4>
+                <div id="goal-setup-view" class="goal-setup">
+                    <input type="number" id="goal-input" min="1" value="10">
+                    <button class="button primary-button" onclick="setDailyGoal()">목표 설정</button>
+                </div>
+                <div id="goal-status-view" class="hidden">
+                    <span id="goal-status"></span>
+                </div>
+            </div>
+            <div id="subject-list"></div>
     <div class="container">
         <div id="auth-container">
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
@@ -162,7 +216,13 @@
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        let currentSubjectId, currentSubjectData, allQuestionsForSubject = [], currentQuizIndex = 0, quizQuestions = [], selectedOption = null, quizScore = 0;
+        let currentSubjectId, currentSubjectData, allQuestionsForSubject = []; 
+        let currentQuizIndex = 0, quizQuestions = [], selectedOption = null, quizScore = 0;
+        
+        // ✨ 점진적 학습 기능 변수 추가 ✨
+        let dailyGoal = 0;
+        let dailyProgress = 0;
+        
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
         function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
@@ -273,6 +333,7 @@
                         <p>정답률: <strong>${((quizScore / quizQuestions.length) * 100).toFixed(1)}%</strong></p>
                     </div>
                 `;
+                updateDailyProgress(quizScore);
                 return;
             }
 
@@ -291,6 +352,41 @@
                 }
             });
             document.getElementById('submit-btn').onclick = submitAnswer;
+        }
+
+        // ✨ 점진적 학습 기능 함수 추가 ✨
+        function setDailyGoal() {
+            const goalInput = document.getElementById('goal-input');
+            const goalValue = parseInt(goalInput.value, 10);
+
+            if (isNaN(goalValue) || goalValue <= 0) {
+                alert('1 이상의 숫자를 목표로 설정해주세요.');
+                return;
+            }
+
+            dailyGoal = goalValue;
+            dailyProgress = 0; // 목표를 새로 설정하면 진행도는 초기화
+
+            document.getElementById('goal-setup-view').classList.add('hidden');
+            document.getElementById('goal-status-view').classList.remove('hidden');
+            
+            updateGoalStatusDisplay();
+        }
+
+        function updateDailyProgress(correctAnswers) {
+            if (dailyGoal <= 0) return; // 목표가 설정되지 않았으면 아무것도 안 함
+
+            dailyProgress += correctAnswers;
+            updateGoalStatusDisplay();
+
+            if (dailyProgress >= dailyGoal) {
+                alert('🎉 오늘의 학습 목표를 달성했습니다! 대단해요!');
+            }
+        }
+
+        function updateGoalStatusDisplay() {
+            const statusSpan = document.getElementById('goal-status');
+            statusSpan.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
         }
         
         function submitAnswer() {
