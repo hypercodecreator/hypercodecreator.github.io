@@ -422,7 +422,8 @@
         async function showTreeView() {
             showView('tree-view');
             const container = document.getElementById('tree-container');
-            container.innerHTML = ''; 
+            
+            container.innerHTML = ''; // 항상 새로 그림
 
             const parts = {};
             allQuestionsForSubject.forEach(q => {
@@ -433,6 +434,7 @@
 
             let treeHTML = '<ul>';
             treeHTML += `<li class="expandable"><span class="node-text">${currentSubjectData.name}</span><ul>`;
+            
             const sortedPartNames = currentSubjectData.partOrder || Object.keys(parts).sort();
             sortedPartNames.forEach(partName => {
                 if (!parts[partName]) return;
@@ -442,17 +444,24 @@
                     (q.keywords || []).forEach(kw => { conceptsHTML += `<span class="concept-badge badge-keyword">${kw}</span>`; });
                     (q.tags || []).forEach(tag => { conceptsHTML += `<span class="concept-badge badge-tag">${tag}</span>`; });
                     (q.metatags || []).forEach(mt => { conceptsHTML += `<span class="concept-badge badge-metatag">${mt}</span>`; });
+                    
                     const conceptsContainer = conceptsHTML ? `<div class="concept-badges-container">${conceptsHTML}</div>` : '';
-                    treeHTML += `<li><span class="node-text">${q.fixedId}. ${q.text}</span>${conceptsContainer}</li>`;
+
+                    treeHTML += `<li>
+                                    <span class="node-text">${q.fixedId}. ${q.text}</span>
+                                    ${conceptsContainer}
+                                 </li>`;
                 });
                 treeHTML += '</ul></li>';
             });
             treeHTML += '</ul></li></ul>';
+
             container.innerHTML = treeHTML;
             
             if (container.querySelector('li.expandable')) {
                 container.querySelector('li.expandable').classList.add('expanded');
             }
+
         }
         
         document.addEventListener('DOMContentLoaded', () => {
