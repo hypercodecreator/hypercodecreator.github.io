@@ -108,8 +108,18 @@
 </head>
 <body>
     <div class="container">
+
         <div id="auth-container">
+            <div id="logged-out-view">
+                <button class="button light-button" onclick="showView('login-view')">로그인</button>
+                <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
             </div>
+            <div id="logged-in-view" class="hidden">
+                <span id="user-email"></span>
+                <button class="button secondary-button" onclick="logOut()">로그아웃</button>
+            </div>
+        </div>
+
         <div id="subject-view">
             <h2>과목 선택</h2>
             <div id="goal-view">
@@ -123,15 +133,8 @@
                 </div>
             </div>
             <div id="subject-list"></div>
-    <div class="container">
-        <div id="auth-container">
-            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
-            <div id="logged-in-view" class="hidden"><span id="user-email"></span><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        <div id="subject-view">
-            <h2>과목 선택</h2>
-            <div id="subject-list"></div>
-        </div>
+
         <div id="quiz-view" class="hidden">
              <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
             <div id="quiz-body"></div>
@@ -141,6 +144,7 @@
             <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
+
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
             <button class="button primary-button" onclick="showAddForm()">+ 새 문제 추가</button>
@@ -150,12 +154,14 @@
             <div id="question-list-container"></div>
             <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
         </div>
+
         <div id="tree-view" class="hidden">
             <h2>🌳 지식 트리</h2>
             <div id="tree-container">지식 트리 로딩 중...</div>
             <hr>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">↩️ 문제 관리로</button>
         </div>
+        
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
@@ -177,12 +183,14 @@
             <button id="save-btn" class="button primary-button">저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
+
         <div id="bulk-add-view" class="hidden">
              <h2>📚 여러 문제 추가</h2>
             <div class="form-group"><textarea id="bulk-text" rows="10" placeholder="문제: ..."></textarea></div>
             <button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
+        
         <div id="signup-view" class="hidden">
             <h2>회원가입</h2>
             <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
@@ -190,6 +198,7 @@
             <button class="button primary-button" onclick="signUp()">회원가입</button>
             <button class="button light-button" onclick="showView('subject-view')">취소</button>
         </div>
+
         <div id="login-view" class="hidden">
             <h2>로그인</h2>
             <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
@@ -197,9 +206,8 @@
             <button class="button primary-button" onclick="logIn()">로그인</button>
             <button class="button light-button" onclick="showView('subject-view')">취소</button>
         </div>
-    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    </div> <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
