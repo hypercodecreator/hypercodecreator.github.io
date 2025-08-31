@@ -399,6 +399,19 @@
             const statusSpan = document.getElementById('goal-status');
             statusSpan.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
         }
+
+        function resetDailyGoal() {
+            // 1. 목표와 진행도 변수를 초기화합니다.
+            dailyGoal = 0;
+            dailyProgress = 0;
+            
+            // 2. UI를 다시 목표 설정 상태로 되돌립니다.
+            document.getElementById('goal-status-view').classList.add('hidden');
+            document.getElementById('goal-setup-view').classList.remove('hidden');
+            
+            // 3. (선택 사항) 입력 필드의 값을 기본값으로 되돌립니다.
+            document.getElementById('goal-input').value = '10';
+        }
         
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요."); return; }
