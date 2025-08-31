@@ -232,6 +232,9 @@
         
         let dailyGoal = 0;
         let dailyProgress = 0;
+
+        let subjectGoals = {};    // 과목별 목표량을 저장할 객체 (예: {컴활: 10, 정처기: 5})
+        let subjectProgress = {}; // 과목별 진행도를 저장할 객체 (예: {컴활: 2, 정처기: 1})
         
         const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
@@ -258,11 +261,20 @@
         function setSubjectGoal(subjectId) {
             const goalInput = document.getElementById(`goal-input-${subjectId}`);
             const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
-            
             const goalValue = parseInt(goalInput.value, 10);
+        
             if (isNaN(goalValue) || goalValue <= 0) {
                 alert('1 이상의 숫자를 목표로 설정해주세요.');
                 return;
+            }
+        
+            // ✨ 변수에 과목별 목표와 진행도를 저장/초기화합니다.
+            subjectGoals[subjectId] = goalValue;
+            subjectProgress[subjectId] = 0; // 목표를 새로 설정하면 진행도는 0으로 초기화
+        
+            statusSpan.textContent = `(달성: 0 / ${goalValue})`;
+            statusSpan.style.color = 'blue';
+            setTimeout(() => { statusSpan.style.color = ''; }, 2000);
         }
 
             // (향후 DB 연동 전까지) 임시로 화면에만 상태를 표시합니다.
@@ -274,43 +286,40 @@
     
         
         async function loadSubjects() {
-    const listDiv = document.getElementById('subject-list');
-    listDiv.innerHTML = '과목 로딩 중...';
-    
-    try {
-        const snapshot = await db.collection('subjects').orderBy('name').get();
-        listDiv.innerHTML = ''; // 목록 비우기
-
-        snapshot.forEach(doc => {
-            const subject = doc.data();
-            const subjectId = doc.id;
-            const item = document.createElement('div');
-            item.className = 'subject-item';
+            const listDiv = document.getElementById('subject-list');
+            listDiv.innerHTML = '과목 로딩 중...';
             
-            // 과목별 목표 상태를 표시할 부분 (추후 DB 연동)
-            // 지금은 임시로 (0 / 5) 와 같이 표시됩니다.
-            const subjectGoalStatus = `(달성: 0 / 5)`; 
-
-            // 새로운 HTML 구조
-            item.innerHTML = `
-                <div style="flex-grow: 1;">
-                <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
-                    <span>과목 목표:</span>
-                    <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                    
-                    <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                    
-                    <span id="subject-goal-status-${subjectId}"></span>
-                </div>
-            </div>
-            <div class="subject-item-buttons">
-                <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
-                <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-            </div>
-        `;
-            listDiv.appendChild(item);
-        });
+            const snapshot = await db.collection('subjects').orderBy('name').get();
+            listDiv.innerHTML = ''; 
+        
+            snapshot.forEach(doc => {
+                const subject = doc.data();
+                const subjectId = doc.id;
+                const item = document.createElement('div');
+                item.className = 'subject-item';
+                
+                // ✨ 변수에서 현재 진행도와 목표를 가져옵니다.
+                const currentProgress = subjectProgress[subjectId] || 0;
+                const currentGoal = subjectGoals[subjectId] || '미설정';
+                
+                item.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
+                        <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
+                            <span>과목 목표:</span>
+                            <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                            <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                            <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                        </div>
+                    </div>
+                    <div class="subject-item-buttons">
+                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
+                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            });
+        }
         
         // 과목 추가 버튼 (기존에 있었다면 유지, 없었다면 추가)
         const addSubjectBtn = document.createElement('button');
@@ -400,7 +409,16 @@
                         <p>정답률: <strong>${((quizScore / quizQuestions.length) * 100).toFixed(1)}%</strong></p>
                     </div>
                 `;
-                updateDailyProgress(quizProblemsAttempted);
+                const attempted = quizProblemsAttempted;
+                if(attempted > 0) {
+                    updateDailyProgress(attempted); // 전체 진행도 업데이트
+                    
+                    // ✨ 아래 로직 새로 추가
+                    if (subjectGoals[currentSubjectId]) { // 해당 과목에 목표가 설정된 경우에만
+                        subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+                    }
+                }
+                loadSubjects(); // ✨ 과목 목록을 새로고침하여 변경된 카운트 표시
                 return;
             }
 
@@ -920,11 +938,16 @@
 
                 /** 퀴즈를 중간에 종료할 때 진행도를 저장하는 함수 */
         function exitQuiz() {
-            // 푼 문제가 1개 이상일 때만 진행도를 업데이트합니다.
-            if (quizProblemsAttempted > 0) {
-                updateDailyProgress(quizProblemsAttempted);
+            const attempted = quizProblemsAttempted;
+            if (attempted > 0) {
+                updateDailyProgress(attempted);
+                
+                if (subjectGoals[currentSubjectId]) {
+                    subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+                }
             }
-            // 과목 선택 화면으로 돌아갑니다.
+            // ✨ 과목 목록 새로고침 및 화면 전환
+            loadSubjects(); 
             showView('subject-view');
         }
         
