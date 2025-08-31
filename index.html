@@ -415,7 +415,7 @@
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요."); return; }
             const data = quizQuestions[currentQuizIndex];
-            quizProblemsAttempted++;
+            const quizProblemsAttempted++;
             const isCorrect = selectedOption === data.answer;
             const feedbackDiv = document.getElementById('immediate-feedback');
             
