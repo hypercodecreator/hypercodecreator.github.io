@@ -130,7 +130,8 @@
                 </div>
                 <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
                     <span id="goal-status" style="flex-grow: 1;"></span>
-                    <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyGoal()">재설정</button>
+                    <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyProgress()">진행도 초기화</button>
+                    <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyGoal()">목표 재설정</button>
                 </div>
             </div>
             <div id="subject-list"></div>
@@ -143,7 +144,7 @@
             <hr style="margin:20px 0;">
             <button class="button secondary-button" onclick="showManagementView({ refetch: true })">📋 문제 관리</button>
             <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+            <button class.="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
         </div>
 
         <div id="management-view" class="hidden">
@@ -254,6 +255,24 @@
         async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
         function logOut() { auth.signOut(); }
 
+        function setSubjectGoal(subjectId) {
+            const goalInput = document.getElementById(`goal-input-${subjectId}`);
+            const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
+            
+            const goalValue = parseInt(goalInput.value, 10);
+            if (isNaN(goalValue) || goalValue <= 0) {
+                alert('1 이상의 숫자를 목표로 설정해주세요.');
+                return;
+        }
+
+            // (향후 DB 연동 전까지) 임시로 화면에만 상태를 표시합니다.
+            statusSpan.textContent = `(달성: 0 / ${goalValue})`;
+            // ✨ 피드백을 alert 대신 텍스트로 변경하여 사용성을 개선했습니다. ✨
+            statusSpan.style.color = 'blue'; // 색상으로 피드백 강조
+            setTimeout(() => { statusSpan.style.color = ''; }, 2000); // 2초 후 원래 색으로
+        }
+    
+        
         async function loadSubjects() {
     const listDiv = document.getElementById('subject-list');
     listDiv.innerHTML = '과목 로딩 중...';
@@ -292,21 +311,6 @@
         `;
             listDiv.appendChild(item);
         });
-
-        function setSubjectGoal(subjectId) {
-            const goalInput = document.getElementById(`goal-input-${subjectId}`);
-            const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
-            
-            const goalValue = parseInt(goalInput.value, 10);
-            if (isNaN(goalValue) || goalValue <= 0) {
-                alert('1 이상의 숫자를 목표로 설정해주세요.');
-                return;
-            }
-        
-            // (향후 DB 연동 전까지) 임시로 화면에만 상태를 표시합니다.
-            statusSpan.textContent = `(달성: 0 / ${goalValue})`;
-            alert(`'${subjectId}' 과목의 목표가 ${goalValue}개로 설정되었습니다.`);
-        }
         
         // 과목 추가 버튼 (기존에 있었다면 유지, 없었다면 추가)
         const addSubjectBtn = document.createElement('button');
@@ -912,6 +916,24 @@
                 if (part === selectedValue) opt.selected = true;
                 select.appendChild(opt);
             });
+        }
+
+                /** 퀴즈를 중간에 종료할 때 진행도를 저장하는 함수 */
+        function exitQuiz() {
+            // 푼 문제가 1개 이상일 때만 진행도를 업데이트합니다.
+            if (quizProblemsAttempted > 0) {
+                updateDailyProgress(quizProblemsAttempted);
+            }
+            // 과목 선택 화면으로 돌아갑니다.
+            showView('subject-view');
+        }
+        
+        /** 오늘의 목표는 유지한 채, 진행도(푼 문제 수)만 초기화하는 함수 */
+        function resetDailyProgress() {
+            if (confirm('오늘의 목표는 유지하고, 푼 문제 수만 0으로 초기화하시겠습니까?')) {
+                dailyProgress = 0;
+                updateGoalStatusDisplay();
+            }
         }
         
     </script>
