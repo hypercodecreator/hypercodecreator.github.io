@@ -227,8 +227,8 @@
         const auth = firebase.auth();
         let currentSubjectId, currentSubjectData, allQuestionsForSubject = []; 
         let currentQuizIndex = 0, quizQuestions = [], selectedOption = null, quizScore = 0;
+        let quizProblemsAttempted = 0;
         
-        // ✨ 점진적 학습 기능 변수 추가 ✨
         let dailyGoal = 0;
         let dailyProgress = 0;
         
@@ -275,22 +275,39 @@
             // 새로운 HTML 구조
             item.innerHTML = `
                 <div style="flex-grow: 1;">
-                    <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                    <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
-                        <span>과목 목표:</span>
-                        <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                        <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;">설정</button>
-                        <span id="subject-goal-status-${subjectId}">${subjectGoalStatus}</span>
-                    </div>
+                <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
+                <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
+                    <span>과목 목표:</span>
+                    <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                    
+                    <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                    
+                    <span id="subject-goal-status-${subjectId}"></span>
                 </div>
-                <div class="subject-item-buttons">
-                    <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
-                    <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-                </div>
-            `;
+            </div>
+            <div class="subject-item-buttons">
+                <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
+                <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+            </div>
+        `;
             listDiv.appendChild(item);
         });
 
+        function setSubjectGoal(subjectId) {
+            const goalInput = document.getElementById(`goal-input-${subjectId}`);
+            const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
+            
+            const goalValue = parseInt(goalInput.value, 10);
+            if (isNaN(goalValue) || goalValue <= 0) {
+                alert('1 이상의 숫자를 목표로 설정해주세요.');
+                return;
+            }
+        
+            // (향후 DB 연동 전까지) 임시로 화면에만 상태를 표시합니다.
+            statusSpan.textContent = `(달성: 0 / ${goalValue})`;
+            alert(`'${subjectId}' 과목의 목표가 ${goalValue}개로 설정되었습니다.`);
+        }
+        
         // 과목 추가 버튼 (기존에 있었다면 유지, 없었다면 추가)
         const addSubjectBtn = document.createElement('button');
         addSubjectBtn.className = 'button primary-button';
