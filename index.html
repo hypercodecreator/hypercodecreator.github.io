@@ -268,10 +268,11 @@
                 return;
             }
         
-            // ✨ 변수에 과목별 목표와 진행도를 저장/초기화합니다.
+            // 변수에 과목별 목표와 진행도를 저장/초기화합니다.
             subjectGoals[subjectId] = goalValue;
             subjectProgress[subjectId] = 0; // 목표를 새로 설정하면 진행도는 0으로 초기화
         
+            // 화면에 상태를 표시합니다.
             statusSpan.textContent = `(달성: 0 / ${goalValue})`;
             statusSpan.style.color = 'blue';
             setTimeout(() => { statusSpan.style.color = ''; }, 2000);
@@ -289,50 +290,49 @@
             const listDiv = document.getElementById('subject-list');
             listDiv.innerHTML = '과목 로딩 중...';
             
-            const snapshot = await db.collection('subjects').orderBy('name').get();
-            listDiv.innerHTML = ''; 
+            try {
+                const snapshot = await db.collection('subjects').orderBy('name').get();
+                listDiv.innerHTML = ''; 
         
-            snapshot.forEach(doc => {
-                const subject = doc.data();
-                const subjectId = doc.id;
-                const item = document.createElement('div');
-                item.className = 'subject-item';
-                
-                // ✨ 변수에서 현재 진행도와 목표를 가져옵니다.
-                const currentProgress = subjectProgress[subjectId] || 0;
-                const currentGoal = subjectGoals[subjectId] || '미설정';
-                
-                item.innerHTML = `
-                    <div style="flex-grow: 1;">
-                        <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
-                            <span>과목 목표:</span>
-                            <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                            <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                            <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                snapshot.forEach(doc => {
+                    const subject = doc.data();
+                    const subjectId = doc.id;
+                    const item = document.createElement('div');
+                    item.className = 'subject-item';
+                    
+                    const currentProgress = subjectProgress[subjectId] || 0;
+                    const currentGoal = subjectGoals[subjectId] || '미설정';
+                    
+                    item.innerHTML = `
+                        <div style="flex-grow: 1;">
+                            <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
+                            <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
+                                <span>과목 목표:</span>
+                                <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                                <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                                <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="subject-item-buttons">
-                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
-                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-                    </div>
-                `;
-                listDiv.appendChild(item);
-            });
-        }
+                        <div class="subject-item-buttons">
+                            <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
+                            <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
         
-        // 과목 추가 버튼 (기존에 있었다면 유지, 없었다면 추가)
-        const addSubjectBtn = document.createElement('button');
-        addSubjectBtn.className = 'button primary-button';
-        addSubjectBtn.textContent = '+ 새 과목 추가';
-        addSubjectBtn.onclick = () => { /* 새 과목 추가 함수 (추후 구현) */ alert('새 과목 추가 기능은 아직 구현되지 않았습니다.'); };
-        listDiv.appendChild(addSubjectBtn);
-
-    } catch (error) {
-        console.error("과목 로딩 중 오류:", error);
-        listDiv.innerHTML = '<p>과목을 불러오는 중 오류가 발생했습니다.</p>';
-    }
-}
+                // ✨ '+ 새 과목 추가' 버튼 코드를 try 블록 안으로 옮겼습니다.
+                const addSubjectBtn = document.createElement('button');
+                addSubjectBtn.className = 'button primary-button';
+                addSubjectBtn.textContent = '+ 새 과목 추가';
+                addSubjectBtn.onclick = () => { alert('새 과목 추가 기능은 아직 구현되지 않았습니다.'); };
+                listDiv.appendChild(addSubjectBtn);
+        
+            } catch (error) {
+                console.error("과목 로딩 중 오류:", error);
+                listDiv.innerHTML = '<p>과목을 불러오는 중 오류가 발생했습니다.</p>';
+            }
+        }
         
         async function manageSubject(id) {
             const doc = await db.collection('subjects').doc(id).get();
@@ -475,15 +475,13 @@
         }
 
         function resetDailyGoal() {
-            // 1. 목표와 진행도 변수를 초기화합니다.
-            let dailyGoal = 0;
-            let dailyProgress = 0;
+            // ✨ 변수 선언 키워드 'let'을 제거하여 전역 변수를 수정하도록 변경했습니다.
+            dailyGoal = 0;
+            dailyProgress = 0;
             
-            // 2. UI를 다시 목표 설정 상태로 되돌립니다.
             document.getElementById('goal-status-view').classList.add('hidden');
             document.getElementById('goal-setup-view').classList.remove('hidden');
             
-            // 3. (선택 사항) 입력 필드의 값을 기본값으로 되돌립니다.
             document.getElementById('goal-input').value = '10';
         }
         
