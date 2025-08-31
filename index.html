@@ -294,6 +294,7 @@
             }
             currentQuizIndex = 0;
             quizScore = 0;
+            let quizProblemsAttempted = 0; // '푼 문제 수'를 초기화하는 변수
             showView('quiz-view');
             displayCurrentQuiz();
         }
@@ -342,7 +343,7 @@
                         <p>정답률: <strong>${((quizScore / quizQuestions.length) * 100).toFixed(1)}%</strong></p>
                     </div>
                 `;
-                updateDailyProgress(quizScore);
+                updateDailyProgress(quizProblemsAttempted);
                 return;
             }
 
@@ -414,6 +415,7 @@
         function submitAnswer() {
             if (!selectedOption) { alert("보기를 선택해주세요."); return; }
             const data = quizQuestions[currentQuizIndex];
+            quizProblemsAttempted++;
             const isCorrect = selectedOption === data.answer;
             const feedbackDiv = document.getElementById('immediate-feedback');
             
