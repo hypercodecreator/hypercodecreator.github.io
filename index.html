@@ -128,8 +128,9 @@
                     <input type="number" id="goal-input" min="1" value="10">
                     <button class="button primary-button" onclick="setDailyGoal()">목표 설정</button>
                 </div>
-                <div id="goal-status-view" class="hidden">
-                    <span id="goal-status"></span>
+                <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
+                    <span id="goal-status" style="flex-grow: 1;"></span>
+                    <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyGoal()">재설정</button>
                 </div>
             </div>
             <div id="subject-list"></div>
