@@ -144,7 +144,7 @@
             <hr style="margin:20px 0;">
             <button class="button secondary-button" onclick="showManagementView({ refetch: true })">📋 문제 관리</button>
             <button class="button primary-button" onclick="startWeaknessQuiz()">🎯 취약점 공략 퀴즈</button>
-            <button class.="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
+            <button class="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
         </div>
 
         <div id="management-view" class="hidden">
@@ -299,9 +299,13 @@
     }
 
     function updateDailyProgress(attemptedCount) {
-        if (dailyGoal <= 0) return;
+        if (dailyGoal <= 0) return; // 전체 목표가 설정 안됐으면 실행 안함
+        
         dailyProgress += attemptedCount;
-        if (dailyProgress >= dailyGoal) {
+        updateGoalStatusDisplay(); // ✨ 데이터 변경 후 즉시 화면 업데이트를 호출
+    
+        // 목표 달성 알림은 전체 진행도가 목표를 처음 넘어섰을 때 한 번만 울리도록 수정
+        if ((dailyProgress >= dailyGoal) && (dailyProgress - attemptedCount < dailyGoal)) {
             alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
         }
     }
@@ -444,6 +448,7 @@
         selectedOption = null;
         feedbackDiv.innerHTML = '';
         feedbackDiv.className = '';
+    
         if (currentQuizIndex >= quizQuestions.length) {
             quizBody.innerHTML = `
                 <div class="final-result">
@@ -452,20 +457,21 @@
                 </div>
             `;
             const attempted = quizProblemsAttempted;
-            if(attempted > 0) {
-                updateDailyProgress(attempted);
+            if (attempted > 0) {
+                updateDailyProgress(attempted); // 전체 진행도 업데이트 (화면 업데이트 포함)
                 if (subjectGoals[currentSubjectId]) {
                     subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
                 }
             }
-            loadSubjects();
-            updateGoalStatusDisplay();
+            loadSubjects(); // 과목 목록 화면 업데이트
             return;
         }
+    
         const data = quizQuestions[currentQuizIndex];
         let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
         quizBody.innerHTML = `<h4>${currentQuizIndex + 1}. ${data.text}</h4><div>${optionsHTML}</div>`;
         feedbackDiv.innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
+        
         document.querySelectorAll('.option').forEach(li => {
             li.onclick = (e) => {
                 document.querySelector('.option.selected')?.classList.remove('selected');
@@ -475,6 +481,7 @@
         });
         document.getElementById('submit-btn').onclick = submitAnswer;
     }
+
 
     function submitAnswer() {
         if (!selectedOption) { alert("보기를 선택해주세요."); return; }
@@ -926,14 +933,12 @@
         function exitQuiz() {
             const attempted = quizProblemsAttempted;
             if (attempted > 0) {
-                updateDailyProgress(attempted);
-                
+                updateDailyProgress(attempted); // 전체 진행도 업데이트 (화면 업데이트 포함)
                 if (subjectGoals[currentSubjectId]) {
                     subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
                 }
             }
-            // ✨ 과목 목록 새로고침 및 화면 전환
-            loadSubjects(); 
+            loadSubjects(); // 과목 목록 화면 업데이트
             showView('subject-view');
         }
         
