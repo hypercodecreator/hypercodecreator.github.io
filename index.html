@@ -290,7 +290,6 @@
             const doc = await logRef.get();
             if (doc.exists) {
                 const data = doc.data();
-                // ✨ [디버깅] 불러온 데이터를 콘솔에 출력합니다.
                 console.log("✅ 학습 기록 불러오기 성공:", data);
                 
                 dailyGoal = data.totalGoal || 0;
@@ -304,13 +303,12 @@
                     updateGoalStatusDisplay();
                 }
             } else {
-                // ✨ [디버깅] 기록이 없을 경우에도 메시지를 출력합니다.
                 console.log("ℹ️ 오늘의 학습 기록이 DB에 없습니다. 새로 시작합니다.");
-                }
-            } catch (error)
-                console.error("🚨 학습 기록 불러오는 중 오류 발생:", error);
             }
+        } catch (error) { // ✨ 여기에 빠졌던 괄호 { } 를 추가했습니다.
+            console.error("🚨 학습 기록 불러오는 중 오류 발생:", error);
         }
+    }
         
     // ==================================
     // ## 인증 관련 함수 ##
