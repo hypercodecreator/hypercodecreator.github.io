@@ -235,8 +235,8 @@
     // 학습 목표 관련 변수
     let dailyGoal = 0;
     let dailyProgress = 0;
-    let subjectGoals = {};    // 과목별 목표량
-    let subjectProgress = {}; // 과목별 진행도
+    let subjectGoals = {};
+    let subjectProgress = {};
 
     const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
@@ -244,7 +244,6 @@
         views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
     }
 
-    /** 오늘 날짜를 YYYY-MM-DD 형식의 문자열로 반환하는 함수 */
     function getTodayDateString() {
         const today = new Date();
         const year = today.getFullYear();
@@ -253,14 +252,12 @@
         return `${year}-${month}-${day}`;
     }
     
-    /** 현재 학습 상태를 Firestore에 저장하는 함수 */
     async function saveDailyLog() {
         const user = auth.currentUser;
         if (!user) return;
-    
+
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
-    
         const logData = {
             totalGoal: dailyGoal,
             totalProgress: dailyProgress,
@@ -268,35 +265,30 @@
             subjectProgress: subjectProgress,
             lastUpdated: new Date()
         };
-    
         try {
             await logRef.set(logData, { merge: true });
-            // ✨ [디버깅] 저장된 데이터를 콘솔에 출력합니다.
             console.log("✅ 학습 기록 저장 완료:", logData);
         } catch (error) {
             console.error("🚨 학습 기록 저장 중 오류 발생:", error);
         }
     }
     
-    /** Firestore에서 오늘 학습 상태를 불러와 복원하는 함수 */
     async function loadDailyLog() {
         const user = auth.currentUser;
         if (!user) return;
-    
+
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
-    
         try {
             const doc = await logRef.get();
             if (doc.exists) {
                 const data = doc.data();
                 console.log("✅ 학습 기록 불러오기 성공:", data);
-                
                 dailyGoal = data.totalGoal || 0;
                 dailyProgress = data.totalProgress || 0;
                 subjectGoals = data.subjectGoals || {};
                 subjectProgress = data.subjectProgress || {};
-    
+
                 if (dailyGoal > 0) {
                     document.getElementById('goal-setup-view').classList.add('hidden');
                     document.getElementById('goal-status-view').classList.remove('hidden');
@@ -305,51 +297,81 @@
             } else {
                 console.log("ℹ️ 오늘의 학습 기록이 DB에 없습니다. 새로 시작합니다.");
             }
-        } catch (error) { // ✨ 여기에 빠졌던 괄호 { } 를 추가했습니다.
+        } catch (error) {
             console.error("🚨 학습 기록 불러오는 중 오류 발생:", error);
         }
     }
         
-    // ==================================
-    // ## 인증 관련 함수 ##
-    // ==================================
-    auth.onAuthStateChanged(async (user) => { // async 추가
-    const loggedInView = document.getElementById('logged-in-view');
-    const loggedOutView = document.getElementById('logged-out-view');
-    if (loggedInView) loggedInView.classList.toggle('hidden', !user);
-    if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
-    
-    if (user) {
-        document.getElementById('user-email').textContent = `${user.email}님`;
-        await loadDailyLog(); // ✨ DB에서 오늘 학습 기록 불러오기
-        loadSubjects(); // 그 다음에 과목 목록 표시
-    } else {
-        showView('subject-view');
-        document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
-    }
+   auth.onAuthStateChanged(async (user) => {
+        const loggedInView = document.getElementById('logged-in-view');
+        const loggedOutView = document.getElementById('logged-out-view');
+        if (loggedInView) loggedInView.classList.toggle('hidden', !user);
+        if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
+        if (user) {
+            document.getElementById('user-email').textContent = `${user.email}님`;
+            await loadDailyLog();
+            await loadSubjects();
+        } else {
+            showView('subject-view');
+            document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
+        }
     });
+
+    async function loadSubjects() {
+        const listDiv = document.getElementById('subject-list');
+        listDiv.innerHTML = '과목 로딩 중...';
+        try {
+            const snapshot = await db.collection('subjects').orderBy('name').get();
+            listDiv.innerHTML = '';
+            for (const doc of snapshot.docs) { // forEach를 for...of로 변경하여 비동기 안정성 확보
+                const subject = doc.data();
+                const subjectId = doc.id;
+                const item = document.createElement('div');
+                item.className = 'subject-item';
+                const currentProgress = subjectProgress[subjectId] || 0;
+                const currentGoal = subjectGoals[subjectId] || '미설정';
+                item.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
+                        <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
+                            <span>과목 목표:</span>
+                            <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                            <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                            <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                        </div>
+                    </div>
+                    <div class="subject-item-buttons">
+                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
+                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            }
+            const addSubjectBtn = document.createElement('button');
+            addSubjectBtn.className = 'button primary-button';
+            addSubjectBtn.textContent = '+ 새 과목 추가';
+            addSubjectBtn.onclick = () => { alert('새 과목 추가 기능은 아직 구현되지 않았습니다.'); };
+            listDiv.appendChild(addSubjectBtn);
+        } catch (error) {
+            console.error("과목 로딩 중 오류:", error);
+            listDiv.innerHTML = '<p>과목을 불러오는 중 오류가 발생했습니다.</p>';
+        }
+    }
 
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
     function logOut() { auth.signOut(); }
 
-
-    // ==================================
-    // ## 학습 목표 관련 함수 ##
-    // ==================================
     function setDailyGoal() {
         const goalInput = document.getElementById('goal-input');
         const goalValue = parseInt(goalInput.value, 10);
-        if (isNaN(goalValue) || goalValue <= 0) {
-            alert('1 이상의 숫자를 목표로 설정해주세요.');
-            return;
-        }
+        if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
         dailyGoal = goalValue;
         dailyProgress = 0;
         document.getElementById('goal-setup-view').classList.add('hidden');
         document.getElementById('goal-status-view').classList.remove('hidden');
         updateGoalStatusDisplay();
-        saveDailyLog(); // ✨ DB 저장 함수 호출
+        saveDailyLog();
     }
 
     function resetDailyGoal() {
@@ -358,27 +380,28 @@
         document.getElementById('goal-status-view').classList.add('hidden');
         document.getElementById('goal-setup-view').classList.remove('hidden');
         document.getElementById('goal-input').value = '10';
-        saveDailyLog(); // ✨ DB 저장 함수 호출
+        saveDailyLog();
     }
-
+        
     function resetDailyProgress() {
         if (confirm('오늘의 목표는 유지하고, 푼 문제 수만 0으로 초기화하시겠습니까?')) {
             dailyProgress = 0;
             updateGoalStatusDisplay();
-            saveDailyLog(); // ✨ DB 저장 함수 호출
+            saveDailyLog();
         }
     }
 
-    function updateDailyProgress(attemptedCount) {
-        if (dailyGoal <= 0) return; // 전체 목표가 설정 안됐으면 실행 안함
-        
-        dailyProgress += attemptedCount;
-        updateGoalStatusDisplay(); // ✨ 데이터 변경 후 즉시 화면 업데이트를 호출
-    
-        // 목표 달성 알림은 전체 진행도가 목표를 처음 넘어섰을 때 한 번만 울리도록 수정
-        if ((dailyProgress >= dailyGoal) && (dailyProgress - attemptedCount < dailyGoal)) {
-            alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
-        }
+    function setSubjectGoal(subjectId) {
+        const goalInput = document.getElementById(`goal-input-${subjectId}`);
+        const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
+        const goalValue = parseInt(goalInput.value, 10);
+        if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
+        subjectGoals[subjectId] = goalValue;
+        subjectProgress[subjectId] = 0;
+        statusSpan.textContent = `(달성: 0 / ${goalValue})`;
+        statusSpan.style.color = 'blue';
+        setTimeout(() => { statusSpan.style.color = ''; }, 2000);
+        saveDailyLog();
     }
 
     function updateGoalStatusDisplay() {
@@ -388,22 +411,16 @@
         }
     }
 
-    function setSubjectGoal(subjectId) {
-        const goalInput = document.getElementById(`goal-input-${subjectId}`);
-        const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
-        const goalValue = parseInt(goalInput.value, 10);
-        if (isNaN(goalValue) || goalValue <= 0) {
-            alert('1 이상의 숫자를 목표로 설정해주세요.');
-            return;
+    function updateDailyProgress(attemptedCount) {
+        if (dailyGoal <= 0) return;
+        const progressBefore = dailyProgress;
+        dailyProgress += attemptedCount;
+        updateGoalStatusDisplay();
+        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
+            alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
         }
-        subjectGoals[subjectId] = goalValue;
-        subjectProgress[subjectId] = 0;
-        statusSpan.textContent = `(달성: 0 / ${goalValue})`;
-        statusSpan.style.color = 'blue';
-        setTimeout(() => { statusSpan.style.color = ''; }, 2000);
-        saveDailyLog(); // ✨ DB 저장 함수 호출
     }
-
+    
     // ==================================
     // ## 과목/문제 관리 핵심 함수 ##
     // ==================================
@@ -489,8 +506,7 @@
             currentSubjectId = id;
             currentSubjectData = doc.data();
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
-            allQuestionsForSubject = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            quizQuestions = [...allQuestionsForSubject].sort(() => 0.5 - Math.random());
+            quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
         } else {
             quizQuestions = questions.sort(() => 0.5 - Math.random());
         }
@@ -501,51 +517,42 @@
         displayCurrentQuiz();
     }
     
-    function exitQuiz() {
+    async function exitQuiz() {
         const attempted = quizProblemsAttempted;
         if (attempted > 0) {
             updateDailyProgress(attempted);
             if (subjectGoals[currentSubjectId]) {
                 subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
             }
-            saveDailyLog(); // ✨ DB 저장 함수 호출
+            await saveDailyLog();
         }
-        loadSubjects();
-        updateGoalStatusDisplay();
+        await loadSubjects();
         showView('subject-view');
     }
 
-    function displayCurrentQuiz() {
+    async function displayCurrentQuiz() {
         const quizBody = document.getElementById('quiz-body');
         const feedbackDiv = document.getElementById('immediate-feedback');
         selectedOption = null;
-        feedbackDiv.innerHTML = '';
         feedbackDiv.className = '';
-    
+        feedbackDiv.innerHTML = '';
         if (currentQuizIndex >= quizQuestions.length) {
-            quizBody.innerHTML = `
-                <div class="final-result">
-                    <h2>🎉 퀴즈가 끝났습니다!</h2>
-                    <p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p>
-                </div>
-            `;
+            quizBody.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div>`;
             const attempted = quizProblemsAttempted;
             if (attempted > 0) {
-                updateDailyProgress(attempted); // 전체 진행도 업데이트 (화면 업데이트 포함)
+                updateDailyProgress(attempted);
                 if (subjectGoals[currentSubjectId]) {
                     subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
                 }
-                saveDailyLog(); // ✨ DB 저장 함수 호출
+                await saveDailyLog();
             }
-            loadSubjects(); // 과목 목록 화면 업데이트
+            await loadSubjects();
             return;
         }
-    
         const data = quizQuestions[currentQuizIndex];
         let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
         quizBody.innerHTML = `<h4>${currentQuizIndex + 1}. ${data.text}</h4><div>${optionsHTML}</div>`;
         feedbackDiv.innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
-        
         document.querySelectorAll('.option').forEach(li => {
             li.onclick = (e) => {
                 document.querySelector('.option.selected')?.classList.remove('selected');
@@ -555,7 +562,6 @@
         });
         document.getElementById('submit-btn').onclick = submitAnswer;
     }
-
 
     function submitAnswer() {
         if (!selectedOption) { alert("보기를 선택해주세요."); return; }
