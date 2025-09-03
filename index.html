@@ -256,7 +256,7 @@
     /** 현재 학습 상태를 Firestore에 저장하는 함수 */
     async function saveDailyLog() {
         const user = auth.currentUser;
-        if (!user) return; // 로그인 상태가 아니면 저장 안함
+        if (!user) return;
     
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
@@ -266,13 +266,15 @@
             totalProgress: dailyProgress,
             subjectGoals: subjectGoals,
             subjectProgress: subjectProgress,
-            lastUpdated: new Date() // 마지막 업데이트 시간 기록
+            lastUpdated: new Date()
         };
     
         try {
-            await logRef.set(logData, { merge: true }); // merge:true로 다른 필드는 유지하고 덮어쓰기
+            await logRef.set(logData, { merge: true });
+            // ✨ [디버깅] 저장된 데이터를 콘솔에 출력합니다.
+            console.log("✅ 학습 기록 저장 완료:", logData);
         } catch (error) {
-            console.error("학습 기록 저장 중 오류 발생:", error);
+            console.error("🚨 학습 기록 저장 중 오류 발생:", error);
         }
     }
     
@@ -288,23 +290,27 @@
             const doc = await logRef.get();
             if (doc.exists) {
                 const data = doc.data();
+                // ✨ [디버깅] 불러온 데이터를 콘솔에 출력합니다.
+                console.log("✅ 학습 기록 불러오기 성공:", data);
+                
                 dailyGoal = data.totalGoal || 0;
                 dailyProgress = data.totalProgress || 0;
                 subjectGoals = data.subjectGoals || {};
                 subjectProgress = data.subjectProgress || {};
     
-                // 불러온 데이터로 화면 상태 업데이트
                 if (dailyGoal > 0) {
                     document.getElementById('goal-setup-view').classList.add('hidden');
                     document.getElementById('goal-status-view').classList.remove('hidden');
                     updateGoalStatusDisplay();
                 }
+            } else {
+                // ✨ [디버깅] 기록이 없을 경우에도 메시지를 출력합니다.
+                console.log("ℹ️ 오늘의 학습 기록이 DB에 없습니다. 새로 시작합니다.");
+                }
+            } catch (error)
+                console.error("🚨 학습 기록 불러오는 중 오류 발생:", error);
             }
-            // 오늘 기록이 없으면 그냥 변수 기본값(0, {})을 사용
-        } catch (error) {
-            console.error("학습 기록 불러오는 중 오류 발생:", error);
         }
-    }
         
     // ==================================
     // ## 인증 관련 함수 ##
