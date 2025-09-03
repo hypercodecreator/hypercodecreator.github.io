@@ -244,21 +244,85 @@
         views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
     }
 
+    /** 오늘 날짜를 YYYY-MM-DD 형식의 문자열로 반환하는 함수 */
+    function getTodayDateString() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    
+    /** 현재 학습 상태를 Firestore에 저장하는 함수 */
+    async function saveDailyLog() {
+        const user = auth.currentUser;
+        if (!user) return; // 로그인 상태가 아니면 저장 안함
+    
+        const today = getTodayDateString();
+        const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
+    
+        const logData = {
+            totalGoal: dailyGoal,
+            totalProgress: dailyProgress,
+            subjectGoals: subjectGoals,
+            subjectProgress: subjectProgress,
+            lastUpdated: new Date() // 마지막 업데이트 시간 기록
+        };
+    
+        try {
+            await logRef.set(logData, { merge: true }); // merge:true로 다른 필드는 유지하고 덮어쓰기
+        } catch (error) {
+            console.error("학습 기록 저장 중 오류 발생:", error);
+        }
+    }
+    
+    /** Firestore에서 오늘 학습 상태를 불러와 복원하는 함수 */
+    async function loadDailyLog() {
+        const user = auth.currentUser;
+        if (!user) return;
+    
+        const today = getTodayDateString();
+        const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
+    
+        try {
+            const doc = await logRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                dailyGoal = data.totalGoal || 0;
+                dailyProgress = data.totalProgress || 0;
+                subjectGoals = data.subjectGoals || {};
+                subjectProgress = data.subjectProgress || {};
+    
+                // 불러온 데이터로 화면 상태 업데이트
+                if (dailyGoal > 0) {
+                    document.getElementById('goal-setup-view').classList.add('hidden');
+                    document.getElementById('goal-status-view').classList.remove('hidden');
+                    updateGoalStatusDisplay();
+                }
+            }
+            // 오늘 기록이 없으면 그냥 변수 기본값(0, {})을 사용
+        } catch (error) {
+            console.error("학습 기록 불러오는 중 오류 발생:", error);
+        }
+    }
+        
     // ==================================
     // ## 인증 관련 함수 ##
     // ==================================
-    auth.onAuthStateChanged(user => {
-        const loggedInView = document.getElementById('logged-in-view');
-        const loggedOutView = document.getElementById('logged-out-view');
-        if (loggedInView) loggedInView.classList.toggle('hidden', !user);
-        if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
-        if (user) {
-            document.getElementById('user-email').textContent = `${user.email}님`;
-            loadSubjects();
-        } else {
-            showView('subject-view');
-            document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
-        }
+    auth.onAuthStateChanged(async (user) => { // async 추가
+    const loggedInView = document.getElementById('logged-in-view');
+    const loggedOutView = document.getElementById('logged-out-view');
+    if (loggedInView) loggedInView.classList.toggle('hidden', !user);
+    if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
+    
+    if (user) {
+        document.getElementById('user-email').textContent = `${user.email}님`;
+        await loadDailyLog(); // ✨ DB에서 오늘 학습 기록 불러오기
+        loadSubjects(); // 그 다음에 과목 목록 표시
+    } else {
+        showView('subject-view');
+        document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
+    }
     });
 
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
@@ -281,6 +345,7 @@
         document.getElementById('goal-setup-view').classList.add('hidden');
         document.getElementById('goal-status-view').classList.remove('hidden');
         updateGoalStatusDisplay();
+        saveDailyLog(); // ✨ DB 저장 함수 호출
     }
 
     function resetDailyGoal() {
@@ -289,12 +354,14 @@
         document.getElementById('goal-status-view').classList.add('hidden');
         document.getElementById('goal-setup-view').classList.remove('hidden');
         document.getElementById('goal-input').value = '10';
+        saveDailyLog(); // ✨ DB 저장 함수 호출
     }
 
     function resetDailyProgress() {
         if (confirm('오늘의 목표는 유지하고, 푼 문제 수만 0으로 초기화하시겠습니까?')) {
             dailyProgress = 0;
             updateGoalStatusDisplay();
+            saveDailyLog(); // ✨ DB 저장 함수 호출
         }
     }
 
@@ -330,6 +397,7 @@
         statusSpan.textContent = `(달성: 0 / ${goalValue})`;
         statusSpan.style.color = 'blue';
         setTimeout(() => { statusSpan.style.color = ''; }, 2000);
+        saveDailyLog(); // ✨ DB 저장 함수 호출
     }
 
     // ==================================
@@ -436,6 +504,7 @@
             if (subjectGoals[currentSubjectId]) {
                 subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
             }
+            saveDailyLog(); // ✨ DB 저장 함수 호출
         }
         loadSubjects();
         updateGoalStatusDisplay();
@@ -462,6 +531,7 @@
                 if (subjectGoals[currentSubjectId]) {
                     subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
                 }
+                saveDailyLog(); // ✨ DB 저장 함수 호출
             }
             loadSubjects(); // 과목 목록 화면 업데이트
             return;
