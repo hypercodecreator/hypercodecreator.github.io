@@ -135,6 +135,7 @@
                 </div>
             </div>
             <div id="subject-list"></div>
+            <button onclick="forceSaveTest()" style="background-color: #dc3545; color: white; margin-top: 20px;" class="button">DB 강제 업데이트 테스트</button>
         </div>
 
         <div id="quiz-view" class="hidden">
@@ -240,6 +241,42 @@
 
     const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
+    async function forceSaveTest() {
+    const user = auth.currentUser;
+    if (!user) {
+        alert("테스트를 위해 먼저 로그인해주세요.");
+        return;
+    }
+
+    const today = getTodayDateString();
+    const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
+
+    alert("지금부터 DB 업데이트 테스트를 시작하겠습니다.");
+    console.log("🚨 DB 강제 저장 테스트 시작...");
+
+    try {
+        // 먼저 'update'가 가능한 상태로 만들기 위해 초기 데이터 설정
+        await logRef.set({ totalGoal: 99, totalProgress: 0, lastUpdated: new Date() }, { merge: true });
+        console.log("테스트용 초기 데이터 설정 완료 (totalProgress: 0)");
+
+        // 1초 후, 강제로 숫자 7을 덮어쓰기(update) 시도
+        setTimeout(async () => {
+            try {
+                await logRef.update({ totalProgress: 7, lastUpdated: new Date() });
+                console.log("✅ 'update' 명령어로 강제 저장 시도 완료 (totalProgress: 7)");
+                alert("강제 저장(update)을 시도했습니다. 지금 바로 Firebase 콘솔에서 데이터가 7로 바뀌었는지 확인해주세요!");
+            } catch (e) {
+                console.error("🚨🚨🚨 'update' 명령어 실행 중 치명적 오류 발생!", e);
+                alert("'update' 명령어에서 오류가 발생했습니다. F12 콘솔을 확인해주세요.");
+            }
+        }, 1000);
+
+    } catch (error) {
+        console.error("🚨 'set' 명령어로 초기화 중 오류 발생:", error);
+        alert("테스트 초기화 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
+    }
+}
+        
     function showView(viewId) {
         views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
     }
