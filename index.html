@@ -425,14 +425,19 @@
     }
 
     function updateDailyProgress(attemptedCount) {
-        if (dailyGoal <= 0) return;
-        const progressBefore = dailyProgress;
-        dailyProgress += attemptedCount;
-        updateGoalStatusDisplay();
-        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
-            alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
-        }
+    if (dailyGoal <= 0) return;
+
+    // ✨ 이 한 줄이 빠져서 모든 문제가 발생했습니다.
+    const progressBefore = dailyProgress; 
+    
+    dailyProgress += attemptedCount;
+    updateGoalStatusDisplay();
+
+    // 목표 달성 알림은 전체 진행도가 목표를 처음 넘어섰을 때 한 번만 울립니다.
+    if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
+        alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
     }
+}
     
     // ==================================
     // ## 과목/문제 관리 핵심 함수 ##
