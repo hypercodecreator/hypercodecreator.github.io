@@ -255,9 +255,11 @@
     async function saveDailyLog() {
         const user = auth.currentUser;
         if (!user) return;
-
+    
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
+    
+        // 저장할 현재 앱의 상태 데이터
         const logData = {
             totalGoal: dailyGoal,
             totalProgress: dailyProgress,
@@ -265,11 +267,22 @@
             subjectProgress: subjectProgress,
             lastUpdated: new Date()
         };
+    
         try {
-            await logRef.set(logData, { merge: true });
-            console.log("✅ 학습 기록 저장 완료:", logData);
+            // ✨ DB에 오늘자 문서가 있는지 먼저 확인합니다.
+            const doc = await logRef.get();
+    
+            if (doc.exists) {
+                // ✨ 문서가 있으면, 내용을 '수정(update)'합니다.
+                await logRef.update(logData);
+                console.log("✅ 학습 기록 업데이트 완료:", logData);
+            } else {
+                // ✨ 문서가 없으면, 문서를 '생성(set)'합니다.
+                await logRef.set(logData);
+                console.log("✅ 학습 기록 신규 생성 완료:", logData);
+            }
         } catch (error) {
-            console.error("🚨 학습 기록 저장 중 오류 발생:", error);
+            console.error("🚨 학습 기록 저장/업데이트 중 오류 발생:", error);
         }
     }
     
