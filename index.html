@@ -135,8 +135,7 @@
                 </div>
                 </div>
                 <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
-                    <span id="goal-status" style="flex-grow: 1;"></span>
-                    <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyProgress()">진행도 초기화</button>
+                    <span id="goal-status" style="flex-grow: 1;"></span>            
                     <button class="button light-button" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 0;" onclick="resetDailyGoal()">목표 재설정</button>
                 </div>
             </div>
@@ -375,11 +374,9 @@
     }
 
     function resetDailyProgress() {
-        if (confirm('오늘의 목표는 유지하고, 푼 문제 수만 0으로 초기화하시겠습니까?')) {
-            dailyProgress = 0;
-            updateGoalStatusDisplay();
-            saveDailyLog();
-        }
+        dailyProgress = 0;
+        updateGoalStatusDisplay();
+        saveDailyLog();
     }
 
     function setSubjectGoal(subjectId) {
@@ -387,11 +384,22 @@
         const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
         const goalValue = parseInt(goalInput.value, 10);
         if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
+    
+        // ✨ 과목별 체크박스의 체크 여부를 확인합니다.
+        const shouldResetProgress = document.getElementById(`reset-subject-progress-checkbox-${subjectId}`).checked;
+    
         subjectGoals[subjectId] = goalValue;
-        subjectProgress[subjectId] = 0;
-        statusSpan.textContent = `(달성: 0 / ${goalValue})`;
-        statusSpan.style.color = 'blue';
-        setTimeout(() => { statusSpan.style.color = ''; }, 2000);
+        
+        // ✨ 체크된 경우에만 해당 과목의 진행도를 0으로 초기화합니다.
+        if (shouldResetProgress) {
+            subjectProgress[subjectId] = 0;
+        }
+        
+        // 화면 업데이트 및 DB 저장
+        const currentProgress = subjectProgress[subjectId] || 0;
+        statusSpan.textContent = `(달성: ${currentProgress} / ${goalValue})`;
+        document.getElementById(`reset-subject-progress-checkbox-${subjectId}`).checked = true; // 체크박스 기본값으로 복원
+        
         saveDailyLog();
     }
 
@@ -428,14 +436,22 @@
                 item.className = 'subject-item';
                 const currentProgress = subjectProgress[subjectId] || 0;
                 const currentGoal = subjectGoals[subjectId] || '미설정';
+    
+                // ✨ 과목별 목표 설정 UI에 체크박스를 추가한 새 HTML 구조입니다.
                 item.innerHTML = `
                     <div style="flex-grow: 1;">
                         <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
-                            <span>과목 목표:</span>
-                            <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                            <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                            <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                        <div class="subject-goal-controls" style="margin-top: 8px; font-size: 0.9em;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>과목 목표:</span>
+                                <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                                <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                                <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                            </div>
+                            <div style="margin-top: 5px;">
+                                <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
+                                <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
+                            </div>
                         </div>
                     </div>
                     <div class="subject-item-buttons">
