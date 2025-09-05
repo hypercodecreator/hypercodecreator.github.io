@@ -52,8 +52,6 @@
         #tree-container li.expandable.expanded::before { content: "[-] "; }
         #tree-container li.expandable.expanded > ul { display: block; }
         #tree-container li > ul { display: none; }
-        
-        /* ✨ tags-keywords -> concept-badges-container로 이름 변경 및 스타일 추가 ✨ */
         #tree-container .concept-badges-container { display: block; padding-left: 1.2em; margin-top: 4px; }
         .concept-badge {
             display: inline-block;
@@ -103,12 +101,28 @@
         #goal-status .goal {
             color: #6c757d;
         }
-        
+
+        #feedback-bar {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #feedback-bar.success {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        #feedback-bar.error {
+            background-color: #f8d7da;
+            color: #842029;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-
+        <div id="feedback-bar" class="hidden"></div>
+        <div id="auth-container">
         <div id="auth-container">
             <div id="logged-out-view">
                 <button class="button light-button" onclick="showView('login-view')">로그인</button>
@@ -239,13 +253,165 @@
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
     let currentQuizIndex = 0, quizQuestions = [], selectedOption = null, quizScore = 0;
     let quizProblemsAttempted = 0;
-
-    // 학습 목표 관련 변수
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
-
     const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
+     /** 팝업 대신 피드백 바를 보여주는 새로운 함수 */
+    function showFeedback(message, type = 'error') { // type: 'success' 또는 'error'
+        const feedbackBar = document.getElementById('feedback-bar');
+        feedbackBar.textContent = message;
+        feedbackBar.className = type; // success 또는 error 클래스 적용
+        feedbackBar.classList.remove('hidden');
+
+        setTimeout(() => {
+            feedbackBar.classList.add('hidden');
+        }, 3000); // 3초 후에 자동으로 사라짐
+    }
+
+    /** 새로운 과목을 Firestore에 추가하는 함수 */
+    async function addSubject() {
+        const input = document.getElementById('new-subject-name');
+        const subjectName = input.value.trim();
+        if (!subjectName) {
+            showFeedback('과목 이름을 입력해주세요.');
+            return;
+        }
+
+        try {
+            // Firestore 'subjects' 컬렉션에 새로운 문서(과목) 추가
+            await db.collection('subjects').add({
+                name: subjectName,
+                questionCount: 0,
+                // 필요하다면 partOrder, partCodes 등 초기 구조 추가 가능
+            });
+            showFeedback(`'${subjectName}' 과목이 성공적으로 추가되었습니다.`, 'success');
+            hideAddSubjectForm(); // 입력 창 숨기기
+            await loadSubjects();   // 과목 목록 새로고침
+        } catch (error) {
+            console.error("과목 추가 중 오류:", error);
+            showFeedback('과목 추가 중 오류가 발생했습니다.');
+        }
+    }
+
+    /** 과목 추가 입력 창을 보여주는 함수 */
+    function showAddSubjectForm() {
+        document.getElementById('add-subject-form').classList.remove('hidden');
+        document.getElementById('add-subject-button').classList.add('hidden');
+    }
+
+    /** 과목 추가 입력 창을 숨기는 함수 */
+    function hideAddSubjectForm() {
+        document.getElementById('add-subject-form').classList.add('hidden');
+        document.getElementById('new-subject-name').value = ''; // 입력 필드 초기화
+        document.getElementById('add-subject-button').classList.remove('hidden');
+    }
+
+    /** 과목과 그 하위 문제들을 모두 삭제하는 함수 */
+    async function deleteSubject(subjectId, subjectName) {
+        // 1단계: 삭제 버튼을 '확인' 버튼으로 변경 (팝업 대체)
+        const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
+        if (deleteBtn.textContent !== '삭제 확인') {
+            deleteBtn.textContent = '삭제 확인';
+            deleteBtn.style.backgroundColor = '#dc3545'; // 빨간색으로 변경
+            // 5초 후에 원래대로 되돌리는 타임아웃
+            setTimeout(() => {
+                deleteBtn.textContent = '삭제';
+                deleteBtn.style.backgroundColor = '';
+            }, 5000);
+            return;
+        }
+
+        // 2단계: '확인' 버튼을 눌렀을 때 실제 삭제 로직 실행
+        showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
+        try {
+            const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
+            const batch = db.batch();
+
+            // 하위 'questions' 문서들을 모두 삭제 목록에 추가
+            questionsSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // 부모 'subject' 문서도 삭제 목록에 추가
+            const subjectRef = db.collection('subjects').doc(subjectId);
+            batch.delete(subjectRef);
+
+            // 일괄 삭제 실행
+            await batch.commit();
+
+            showFeedback(`'${subjectName}' 과목이 성공적으로 삭제되었습니다.`, 'success');
+            await loadSubjects(); // 과목 목록 새로고침
+
+        } catch (error) {
+            console.error("과목 삭제 중 오류:", error);
+            showFeedback('과목 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    /** 과목 목록을 불러오는 수정된 함수 (과목 관리 버튼 추가) */
+    async function loadSubjects() {
+        const listDiv = document.getElementById('subject-list');
+        listDiv.innerHTML = '과목 로딩 중...';
+        try {
+            const snapshot = await db.collection('subjects').orderBy('name').get();
+            listDiv.innerHTML = '';
+            for (const doc of snapshot.docs) {
+                const subject = doc.data();
+                const subjectId = doc.id;
+                const subjectName = subject.name;
+                const item = document.createElement('div');
+                item.className = 'subject-item';
+                const currentProgress = subjectProgress[subjectId] || 0;
+                const currentGoal = subjectGoals[subjectId] || '미설정';
+                item.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
+                        <div class="subject-goal-controls" style="margin-top: 8px; font-size: 0.9em;">
+                            </div>
+                    </div>
+                    <div class="subject-item-buttons">
+                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
+                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+                        <button id="delete-btn-${subjectId}" class="button light-button" onclick="deleteSubject('${subjectId}', '${subjectName}')">삭제</button>
+                    </div>
+                `;
+                 // innerHTML에 있던 목표 설정 UI는 가독성을 위해 생략. 기존 코드와 동일하게 작동합니다.
+                const goalControlsHTML = `...`; // 생략
+                item.querySelector('.subject-goal-controls').innerHTML = `
+                     <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>과목 목표:</span>
+                        <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
+                        <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                        <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
+                        <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            }
+            // 과목 추가 UI (버튼 + 숨겨진 입력 폼)
+            listDiv.insertAdjacentHTML('beforeend', `
+                <div id="add-subject-form" class="hidden" style="margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="new-subject-name">새 과목 이름</label>
+                        <input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="button light-button" onclick="hideAddSubjectForm()">취소</button>
+                        <button class="button primary-button" onclick="addSubject()">저장</button>
+                    </div>
+                </div>
+                <button id="add-subject-button" class="button primary-button" onclick="showAddSubjectForm()">+ 새 과목 추가</button>
+            `);
+        } catch (error) {
+            console.error("과목 로딩 중 오류:", error);
+            showFeedback('과목을 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+        
     // ==================================
     // ## 핵심 유틸리티 함수 ##
     // ==================================
@@ -374,32 +540,29 @@
     }
 
     function resetDailyProgress() {
+        // confirm 대신 바로 실행
         dailyProgress = 0;
         updateGoalStatusDisplay();
         saveDailyLog();
+        showFeedback('진행도가 초기화되었습니다.', 'success');
     }
 
     function setSubjectGoal(subjectId) {
         const goalInput = document.getElementById(`goal-input-${subjectId}`);
         const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
         const goalValue = parseInt(goalInput.value, 10);
-        if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
-    
-        // ✨ 과목별 체크박스의 체크 여부를 확인합니다.
+        if (isNaN(goalValue) || goalValue <= 0) {
+            showFeedback('1 이상의 숫자를 목표로 설정해주세요.');
+            return;
+        }
         const shouldResetProgress = document.getElementById(`reset-subject-progress-checkbox-${subjectId}`).checked;
-    
         subjectGoals[subjectId] = goalValue;
-        
-        // ✨ 체크된 경우에만 해당 과목의 진행도를 0으로 초기화합니다.
         if (shouldResetProgress) {
             subjectProgress[subjectId] = 0;
         }
-        
-        // 화면 업데이트 및 DB 저장
         const currentProgress = subjectProgress[subjectId] || 0;
         statusSpan.textContent = `(달성: ${currentProgress} / ${goalValue})`;
-        document.getElementById(`reset-subject-progress-checkbox-${subjectId}`).checked = true; // 체크박스 기본값으로 복원
-        
+        document.getElementById(`reset-subject-progress-checkbox-${subjectId}`).checked = true;
         saveDailyLog();
     }
 
@@ -416,7 +579,8 @@
         dailyProgress += attemptedCount;
         updateGoalStatusDisplay();
         if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
-            alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
+            // alert 대신 피드백 바 사용
+            showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success');
         }
     }
     
@@ -570,7 +734,10 @@
     }
 
     function submitAnswer() {
-        if (!selectedOption) { alert("보기를 선택해주세요."); return; }
+        if (!selectedOption) {
+            showFeedback("보기를 선택해주세요."); // alert 대체
+            return;
+        }
         quizProblemsAttempted++;
         const data = quizQuestions[currentQuizIndex];
         const isCorrect = selectedOption === data.answer;
