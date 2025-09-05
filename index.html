@@ -124,9 +124,15 @@
             <h2>과목 선택</h2>
             <div id="goal-view">
                 <h4>🎯 오늘의 학습 목표</h4>
-                <div id="goal-setup-view" class="goal-setup">
+                <div id="goal-setup-view">
+                <div class="goal-setup">
                     <input type="number" id="goal-input" min="1" value="10">
                     <button class="button primary-button" onclick="setDailyGoal()">목표 설정</button>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.9em;">
+                    <input type="checkbox" id="reset-progress-checkbox" checked>
+                    <label for="reset-progress-checkbox">진행도 함께 초기화 (체크 해제 시 현재 진행도 유지)</label>
+                </div>
                 </div>
                 <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
                     <span id="goal-status" style="flex-grow: 1;"></span>
@@ -333,24 +339,39 @@
     // ## 학습 목표 관리 함수 ##
     // ==================================
     function setDailyGoal() {
-        const goalInput = document.getElementById('goal-input');
-        const goalValue = parseInt(goalInput.value, 10);
-        if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
-        dailyGoal = goalValue;
+    const goalInput = document.getElementById('goal-input');
+    const goalValue = parseInt(goalInput.value, 10);
+    if (isNaN(goalValue) || goalValue <= 0) { alert('1 이상의 숫자를 목표로 설정해주세요.'); return; }
+
+    // ✨ 체크박스의 체크 여부를 확인합니다.
+    const shouldResetProgress = document.getElementById('reset-progress-checkbox').checked;
+
+    dailyGoal = goalValue;
+    
+    // ✨ 체크된 경우에만 진행도를 0으로 초기화합니다.
+    if (shouldResetProgress) {
         dailyProgress = 0;
-        document.getElementById('goal-setup-view').classList.add('hidden');
-        document.getElementById('goal-status-view').classList.remove('hidden');
-        updateGoalStatusDisplay();
-        saveDailyLog();
+    }
+    // 체크가 안 되어있으면 dailyProgress는 그대로 유지됩니다.
+
+    document.getElementById('goal-setup-view').classList.add('hidden');
+    document.getElementById('goal-status-view').classList.remove('hidden');
+    
+    // 체크박스를 다시 기본값(체크된 상태)으로 되돌립니다.
+    document.getElementById('reset-progress-checkbox').checked = true;
+
+    updateGoalStatusDisplay();
+    saveDailyLog();
     }
 
     function resetDailyGoal() {
-        dailyGoal = 0;
-        dailyProgress = 0;
-        document.getElementById('goal-status-view').classList.add('hidden');
-        document.getElementById('goal-setup-view').classList.remove('hidden');
-        document.getElementById('goal-input').value = '10';
-        saveDailyLog();
+    // 목표 자체는 0으로 초기화하고 UI를 설정 화면으로 되돌립니다.
+    dailyGoal = 0;
+    document.getElementById('goal-status-view').classList.add('hidden');
+    document.getElementById('goal-setup-view').classList.remove('hidden');
+
+    // DB에 목표가 '0'이 된 상태를 바로 저장하지는 않습니다.
+    // 사용자가 새 목표를 설정하고 '목표 설정'을 눌렀을 때 최종 저장됩니다.
     }
 
     function resetDailyProgress() {
