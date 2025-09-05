@@ -234,49 +234,14 @@
     let quizProblemsAttempted = 0;
 
     // 학습 목표 관련 변수
-    let dailyGoal = 0;
-    let dailyProgress = 0;
-    let subjectGoals = {};
-    let subjectProgress = {};
+    let dailyGoal = 0, dailyProgress = 0;
+    let subjectGoals = {}, subjectProgress = {};
 
     const views = ['subject-view', 'quiz-view', 'management-view', 'add-edit-view', 'signup-view', 'login-view', 'bulk-add-view', 'tree-view'];
 
-    async function forceSaveTest() {
-    const user = auth.currentUser;
-    if (!user) {
-        alert("테스트를 위해 먼저 로그인해주세요.");
-        return;
-    }
-
-    const today = getTodayDateString();
-    const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
-
-    alert("지금부터 DB 업데이트 테스트를 시작하겠습니다.");
-    console.log("🚨 DB 강제 저장 테스트 시작...");
-
-    try {
-        // 먼저 'update'가 가능한 상태로 만들기 위해 초기 데이터 설정
-        await logRef.set({ totalGoal: 99, totalProgress: 0, lastUpdated: new Date() }, { merge: true });
-        console.log("테스트용 초기 데이터 설정 완료 (totalProgress: 0)");
-
-        // 1초 후, 강제로 숫자 7을 덮어쓰기(update) 시도
-        setTimeout(async () => {
-            try {
-                await logRef.update({ totalProgress: 7, lastUpdated: new Date() });
-                console.log("✅ 'update' 명령어로 강제 저장 시도 완료 (totalProgress: 7)");
-                alert("강제 저장(update)을 시도했습니다. 지금 바로 Firebase 콘솔에서 데이터가 7로 바뀌었는지 확인해주세요!");
-            } catch (e) {
-                console.error("🚨🚨🚨 'update' 명령어 실행 중 치명적 오류 발생!", e);
-                alert("'update' 명령어에서 오류가 발생했습니다. F12 콘솔을 확인해주세요.");
-            }
-        }, 1000);
-
-    } catch (error) {
-        console.error("🚨 'set' 명령어로 초기화 중 오류 발생:", error);
-        alert("테스트 초기화 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
-    }
-}
-        
+    // ==================================
+    // ## Helper & Core Functions ##
+    // ==================================
     function showView(viewId) {
         views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
     }
@@ -289,14 +254,14 @@
         return `${year}-${month}-${day}`;
     }
     
+    // ==================================
+    // ## DB Persistence Functions ##
+    // ==================================
     async function saveDailyLog() {
         const user = auth.currentUser;
         if (!user) return;
-    
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
-    
-        // 저장할 현재 앱의 상태 데이터
         const logData = {
             totalGoal: dailyGoal,
             totalProgress: dailyProgress,
@@ -304,29 +269,22 @@
             subjectProgress: subjectProgress,
             lastUpdated: new Date()
         };
-    
         try {
-            // ✨ DB에 오늘자 문서가 있는지 먼저 확인합니다.
             const doc = await logRef.get();
-    
             if (doc.exists) {
-                // ✨ 문서가 있으면, 내용을 '수정(update)'합니다.
                 await logRef.update(logData);
-                console.log("✅ 학습 기록 업데이트 완료:", logData);
             } else {
-                // ✨ 문서가 없으면, 문서를 '생성(set)'합니다.
                 await logRef.set(logData);
-                console.log("✅ 학습 기록 신규 생성 완료:", logData);
             }
+            console.log("✅ 학습 기록 저장/업데이트 완료:", logData);
         } catch (error) {
-            console.error("🚨 학습 기록 저장/업데이트 중 오류 발생:", error);
+            console.error("🚨 학습 기록 저장 중 오류:", error);
         }
     }
-    
+
     async function loadDailyLog() {
         const user = auth.currentUser;
         if (!user) return;
-
         const today = getTodayDateString();
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(today);
         try {
@@ -348,15 +306,18 @@
                 console.log("ℹ️ 오늘의 학습 기록이 DB에 없습니다. 새로 시작합니다.");
             }
         } catch (error) {
-            console.error("🚨 학습 기록 불러오는 중 오류 발생:", error);
+            console.error("🚨 학습 기록 불러오는 중 오류:", error);
         }
     }
-        
-   auth.onAuthStateChanged(async (user) => {
+
+    // ==================================
+    // ## Auth & App Flow Functions ##
+    // ==================================
+    auth.onAuthStateChanged(async (user) => {
         const loggedInView = document.getElementById('logged-in-view');
         const loggedOutView = document.getElementById('logged-out-view');
-        if (loggedInView) loggedInView.classList.toggle('hidden', !user);
-        if (loggedOutView) loggedOutView.classList.toggle('hidden', !!user);
+        loggedInView?.classList.toggle('hidden', !user);
+        loggedOutView?.classList.toggle('hidden', !!user);
         if (user) {
             document.getElementById('user-email').textContent = `${user.email}님`;
             await loadDailyLog();
@@ -373,7 +334,7 @@
         try {
             const snapshot = await db.collection('subjects').orderBy('name').get();
             listDiv.innerHTML = '';
-            for (const doc of snapshot.docs) { // forEach를 for...of로 변경하여 비동기 안정성 확보
+            for (const doc of snapshot.docs) {
                 const subject = doc.data();
                 const subjectId = doc.id;
                 const item = document.createElement('div');
@@ -408,10 +369,13 @@
         }
     }
 
-    async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
-    async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); showView('subject-view'); } catch (e) { alert(e.message); } }
+    async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { alert(e.message); } }
+    async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { alert(e.message); } }
     function logOut() { auth.signOut(); }
 
+    // ==================================
+    // ## Goal Setting Functions ##
+    // ==================================
     function setDailyGoal() {
         const goalInput = document.getElementById('goal-input');
         const goalValue = parseInt(goalInput.value, 10);
@@ -432,7 +396,7 @@
         document.getElementById('goal-input').value = '10';
         saveDailyLog();
     }
-        
+
     function resetDailyProgress() {
         if (confirm('오늘의 목표는 유지하고, 푼 문제 수만 0으로 초기화하시겠습니까?')) {
             dailyProgress = 0;
@@ -462,62 +426,108 @@
     }
 
     function updateDailyProgress(attemptedCount) {
-    if (dailyGoal <= 0) return;
-
-    // ✨ 이 한 줄이 빠져서 모든 문제가 발생했습니다.
-    const progressBefore = dailyProgress; 
-    
-    dailyProgress += attemptedCount;
-    updateGoalStatusDisplay();
-
-    // 목표 달성 알림은 전체 진행도가 목표를 처음 넘어섰을 때 한 번만 울립니다.
-    if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
-        alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
-    }
-}
-    
-    // ==================================
-    // ## 과목/문제 관리 핵심 함수 ##
-    // ==================================
-    async function loadSubjects() {
-        const listDiv = document.getElementById('subject-list');
-        listDiv.innerHTML = '과목 로딩 중...';
-        try {
-            const snapshot = await db.collection('subjects').orderBy('name').get();
-            listDiv.innerHTML = '';
-            snapshot.forEach(doc => {
-                const subject = doc.data();
-                const subjectId = doc.id;
-                const item = document.createElement('div');
-                item.className = 'subject-item';
-                const currentProgress = subjectProgress[subjectId] || 0;
-                const currentGoal = subjectGoals[subjectId] || '미설정';
-                item.innerHTML = `
-                    <div style="flex-grow: 1;">
-                        <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
-                            <span>과목 목표:</span>
-                            <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                            <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                            <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
-                        </div>
-                    </div>
-                    <div class="subject-item-buttons">
-                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
-                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-                    </div>
-                `;
-                listDiv.appendChild(item);
-            });
-            const addSubjectBtn = document.createElement('button');
-            addSubjectBtn.className = 'button primary-button';
-            addSubjectBtn.textContent = '+ 새 과목 추가';
-            addSubjectBtn.onclick = () => { alert('새 과목 추가 기능은 아직 구현되지 않았습니다.'); };
-            listDiv.appendChild(addSubjectBtn);
-        } catch (error) {
-            console.error("과목 로딩 중 오류:", error);
-            listDiv.innerHTML = '<p>과목을 불러오는 중 오류가 발생했습니다.</p>';
+        if (dailyGoal <= 0) return;
+        const progressBefore = dailyProgress;
+        dailyProgress += attemptedCount;
+        updateGoalStatusDisplay();
+        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
+            alert('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!');
         }
+    }
+
+    // ==================================
+    // ## Quiz & Problem Management ##
+    // ==================================
+    async function startQuiz(id, questions = null) {
+        if (id) {
+            const doc = await db.collection('subjects').doc(id).get();
+            if (!doc.exists) return;
+            currentSubjectId = id;
+            currentSubjectData = doc.data();
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+            quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
+        } else {
+            quizQuestions = questions; //
+        }
+        currentQuizIndex = 0;
+        quizScore = 0;
+        quizProblemsAttempted = 0;
+        showView('quiz-view');
+        displayCurrentQuiz();
+    }
+    
+    async function exitQuiz() {
+        const attempted = quizProblemsAttempted;
+        if (attempted > 0) {
+            updateDailyProgress(attempted);
+            if (subjectGoals[currentSubjectId]) {
+                subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+            }
+            await saveDailyLog();
+        }
+        await loadSubjects();
+        showView('subject-view');
+    }
+
+    async function displayCurrentQuiz() {
+        const quizBody = document.getElementById('quiz-body');
+        const feedbackDiv = document.getElementById('immediate-feedback');
+        selectedOption = null;
+        feedbackDiv.className = '';
+        feedbackDiv.innerHTML = '';
+        if (currentQuizIndex >= quizQuestions.length) {
+            quizBody.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div>`;
+            const attempted = quizProblemsAttempted;
+            if (attempted > 0) {
+                updateDailyProgress(attempted);
+                if (subjectGoals[currentSubjectId]) {
+                    subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+                }
+                await saveDailyLog();
+            }
+            await loadSubjects();
+            return;
+        }
+        const data = quizQuestions[currentQuizIndex];
+        let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
+        quizBody.innerHTML = `<h4>${currentQuizIndex + 1}. ${data.text}</h4><div>${optionsHTML}</div>`;
+        feedbackDiv.innerHTML = `<button id="submit-btn" class="button primary-button">정답 확인</button>`;
+        document.querySelectorAll('.option').forEach(li => {
+            li.onclick = (e) => {
+                document.querySelector('.option.selected')?.classList.remove('selected');
+                e.currentTarget.classList.add('selected');
+                selectedOption = e.currentTarget.textContent;
+            }
+        });
+        document.getElementById('submit-btn').onclick = submitAnswer;
+    }
+
+    function submitAnswer() {
+        if (!selectedOption) { alert("보기를 선택해주세요."); return; }
+        quizProblemsAttempted++;
+        const data = quizQuestions[currentQuizIndex];
+        const isCorrect = selectedOption === data.answer;
+        const feedbackDiv = document.getElementById('immediate-feedback');
+        if (isCorrect) {
+            quizScore++;
+            feedbackDiv.className = 'feedback correct';
+            feedbackDiv.innerHTML = `<p><strong>정답입니다!</strong></p>`;
+        } else {
+            feedbackDiv.className = 'feedback incorrect';
+            feedbackDiv.innerHTML = `<p><strong>오답입니다.</strong> 정답: ${data.answer}</p>`;
+        }
+        if (data.explanation) feedbackDiv.innerHTML += `<p>해설: ${data.explanation}</p>`;
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.style.cursor = 'default';
+            opt.onclick = null;
+            if (opt.textContent === data.answer) opt.style.cssText += 'background-color: #d1e7dd; border-color: #198754;';
+            else if (opt.textContent === selectedOption) opt.style.cssText += 'background-color: #f8d7da; border-color: #dc3545;';
+        });
+        const nextButton = document.createElement('button');
+        nextButton.className = 'button primary-button';
+        nextButton.textContent = '다음 문제 →';
+        nextButton.onclick = () => { currentQuizIndex++; displayCurrentQuiz(); };
+        feedbackDiv.appendChild(nextButton);
     }
 
     async function manageSubject(id) {
