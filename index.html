@@ -356,6 +356,8 @@
         try {
             const snapshot = await db.collection('subjects').orderBy('name').get();
             listDiv.innerHTML = '';
+    
+            // 과목 목록 렌더링
             for (const doc of snapshot.docs) {
                 const subject = doc.data();
                 const subjectId = doc.id;
@@ -364,11 +366,23 @@
                 item.className = 'subject-item';
                 const currentProgress = subjectProgress[subjectId] || 0;
                 const currentGoal = subjectGoals[subjectId] || '미설정';
+    
+                // ✨ 레이아웃을 정리하고 보기 좋게 변경한 HTML 구조입니다.
                 item.innerHTML = `
                     <div style="flex-grow: 1;">
                         <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls" style="margin-top: 8px; font-size: 0.9em;">
+                        <div class="subject-goal-controls" style="margin-top: 10px; font-size: 0.9em;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="goal-input-${subjectId}" style="white-space: nowrap;">과목 목표:</label>
+                                <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px; text-align: center;">
+                                <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                                <span id="subject-goal-status-${subjectId}" style="margin-left: 5px;">(달성: ${currentProgress} / ${currentGoal})</span>
                             </div>
+                            <div style="margin-top: 5px; color: #555;">
+                                <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
+                                <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
+                            </div>
+                        </div>
                     </div>
                     <div class="subject-item-buttons">
                         <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
@@ -376,32 +390,19 @@
                         <button id="delete-btn-${subjectId}" class="button light-button" onclick="deleteSubject('${subjectId}', '${subjectName}')">삭제</button>
                     </div>
                 `;
-                 // innerHTML에 있던 목표 설정 UI는 가독성을 위해 생략. 기존 코드와 동일하게 작동합니다.
-                const goalControlsHTML = `...`; // 생략
-                item.querySelector('.subject-goal-controls').innerHTML = `
-                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span>과목 목표:</span>
-                        <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px;">
-                        <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                        <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
-                    </div>
-                    <div style="margin-top: 5px;">
-                        <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
-                        <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
-                    </div>
-                `;
                 listDiv.appendChild(item);
             }
-            // 과목 추가 UI (버튼 + 숨겨진 입력 폼)
+    
+            // ✨ 팝업을 띄우던 중복 코드를 삭제하고, 입력 폼과 버튼 UI를 추가하는 코드로 정리했습니다.
             listDiv.insertAdjacentHTML('beforeend', `
-                <div id="add-subject-form" class="hidden" style="margin-top: 10px;">
+                <div id="add-subject-form" class="hidden" style="margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
                     <div class="form-group">
-                        <label for="new-subject-name">새 과목 이름</label>
+                        <label for="new-subject-name" style="font-weight: bold;">새 과목 이름</label>
                         <input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기">
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="button light-button" onclick="hideAddSubjectForm()">취소</button>
-                        <button class="button primary-button" onclick="addSubject()">저장</button>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="button light-button" style="flex: 1;" onclick="hideAddSubjectForm()">취소</button>
+                        <button class="button primary-button" style="flex: 1;" onclick="addSubject()">저장</button>
                     </div>
                 </div>
                 <button id="add-subject-button" class="button primary-button" onclick="showAddSubjectForm()">+ 새 과목 추가</button>
