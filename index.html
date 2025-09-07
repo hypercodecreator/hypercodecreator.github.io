@@ -120,6 +120,26 @@
         .subject-goal-controls label, .goal-input-group label { white-space: nowrap; font-size: 0.9em; }
         .subject-goal-controls input[type="number"], .goal-input-group input[type="number"] { width: 60px; padding: 5px; text-align: center; }
         .subject-goal-controls .button, .goal-input-group .button { width: auto; padding: 5px 10px; margin: 0; }
+
+        .subject-item-buttons .edit-btn, .subject-item-buttons .delete-btn {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 5px;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        .subject-item-buttons .edit-btn:hover, .subject-item-buttons .delete-btn:hover {
+            color: #212529;
+        }
+        .subject-name-input {
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 1px solid #0d6efd;
+            padding: 5px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -357,12 +377,10 @@
     /** 과목 목록을 불러오는 수정된 함수 (과목 관리 버튼 추가) */
     async function loadSubjects() {
         const listDiv = document.getElementById('subject-list');
-        listDiv.innerHTML = '과목 로딩 중...';
+        listDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">과목 로딩 중...</div>';
         try {
             const snapshot = await db.collection('subjects').orderBy('name').get();
             listDiv.innerHTML = '';
-    
-            // 과목 목록 렌더링
             for (const doc of snapshot.docs) {
                 const subject = doc.data();
                 const subjectId = doc.id;
@@ -372,35 +390,39 @@
                 const currentProgress = subjectProgress[subjectId] || 0;
                 const currentGoal = subjectGoals[subjectId] || '미설정';
     
-                // ✨ 레이아웃을 정리하고 보기 좋게 변경한 HTML 구조입니다.
                 item.innerHTML = `
-                    <div style="flex-grow: 1;">
-                        <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls" style="margin-top: 10px; font-size: 0.9em;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <label for="goal-input-${subjectId}" style="white-space: nowrap;">과목 목표:</label>
-                                <input type="number" id="goal-input-${subjectId}" min="1" value="10" style="width: 60px; padding: 5px; text-align: center;">
-                                <button class="button light-button" style="width: auto; padding: 5px 10px; margin: 0;" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                                <span id="subject-goal-status-${subjectId}" style="margin-left: 5px;">(달성: ${currentProgress} / ${currentGoal})</span>
-                            </div>
-                            <div style="margin-top: 5px; color: #555;">
-                                <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
-                                <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
-                            </div>
+                    <div id="subject-info-${subjectId}" style="flex-grow: 1;">
+                        <div id="subject-name-container-${subjectId}" style="display: flex; align-items: center;">
+                            <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
+                            <button class="edit-btn" onclick="startEditSubject('${subjectId}', '${subjectName}')">✏️</button>
                         </div>
+                        <div class="subject-goal-controls" style="margin-top: 10px; font-size: 0.9em;">
+                             </div>
                     </div>
                     <div class="subject-item-buttons">
                         <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
                         <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-                        <button id="delete-btn-${subjectId}" class="button light-button" onclick="deleteSubject('${subjectId}', '${subjectName}')">삭제</button>
+                        <button id="delete-btn-${subjectId}" class="delete-btn" onclick="deleteSubject('${subjectId}', '${subjectName}')">🗑️ 삭제</button>
+                    </div>
+                `;
+                 // 목표 설정 UI 부분만 따로 채워넣어 가독성 확보
+                item.querySelector('.subject-goal-controls').innerHTML = `
+                    <div class="goal-input-group">
+                        <label for="goal-input-${subjectId}">과목 목표:</label>
+                        <input type="number" id="goal-input-${subjectId}" min="1" value="10">
+                        <button class="button light-button" onclick="setSubjectGoal('${subjectId}')">설정</button>
+                        <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.9em; color: #555;">
+                        <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
+                        <label for="reset-subject-progress-checkbox-${subjectId}">진행도 함께 초기화</label>
                     </div>
                 `;
                 listDiv.appendChild(item);
             }
-    
-            // ✨ 팝업을 띄우던 중복 코드를 삭제하고, 입력 폼과 버튼 UI를 추가하는 코드로 정리했습니다.
+            // 과목 추가 UI
             listDiv.insertAdjacentHTML('beforeend', `
-                <div id="add-subject-form" class="hidden" style="margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
+                <div id="add-subject-form" class="hidden" style="margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
                     <div class="form-group">
                         <label for="new-subject-name" style="font-weight: bold;">새 과목 이름</label>
                         <input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기">
@@ -896,6 +918,73 @@
             await manageSubject(currentSubjectId);
         } catch(e) { console.error("저장 중 오류 발생:", e); alert("저장 중 오류가 발생했습니다."); }
     }
+        
+    /** 과목 이름 수정을 시작하는 함수 */
+function startEditSubject(subjectId, currentName) {
+    const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
+    nameContainer.innerHTML = `
+        <input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">
+        <button class="button light-button" style="margin: 0 5px;" onclick="cancelEdit()">취소</button>
+        <button class="button primary-button" style="margin: 0;" onclick="saveSubjectUpdate('${subjectId}')">저장</button>
+    `;
+    document.getElementById(`edit-subject-input-${subjectId}`).focus();
+}
+
+/** 과목 이름 수정 내용을 저장하는 함수 */
+async function saveSubjectUpdate(subjectId) {
+    const input = document.getElementById(`edit-subject-input-${subjectId}`);
+    const newName = input.value.trim();
+    if (!newName) {
+        showFeedback("과목 이름은 비워둘 수 없습니다.");
+        return;
+    }
+    try {
+        await db.collection('subjects').doc(subjectId).update({ name: newName });
+        showFeedback("과목 이름이 수정되었습니다.", "success");
+        await loadSubjects();
+    } catch (error) {
+        console.error("과목 이름 수정 중 오류:", error);
+        showFeedback("과목 이름 수정 중 오류가 발생했습니다.");
+    }
+}
+
+/** 과목 이름 수정을 취소하고 원래대로 되돌리는 함수 */
+function cancelEdit() {
+    loadSubjects(); // 간단하게 목록을 다시 로드하여 수정 상태를 취소
+}
+
+/** 과목과 그 하위 문제들을 모두 삭제하는 함수 (2단계 확인) */
+async function deleteSubject(subjectId, subjectName) {
+    const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
+    if (deleteBtn.textContent !== '🗑️ 삭제 확인') {
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '🗑️ 삭제 확인';
+        deleteBtn.style.color = '#dc3545';
+        setTimeout(() => {
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.style.color = '#6c757d';
+        }, 4000);
+        return;
+    }
+
+    showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
+    try {
+        const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
+        const batch = db.batch();
+        questionsSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        const subjectRef = db.collection('subjects').doc(subjectId);
+        batch.delete(subjectRef);
+        
+        await batch.commit();
+        showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success');
+        await loadSubjects();
+    } catch (error) {
+        console.error("과목 삭제 중 오류:", error);
+        showFeedback('과목 삭제 중 오류가 발생했습니다.');
+    }
+}
+        
 </script>
 </body>
 </html>
