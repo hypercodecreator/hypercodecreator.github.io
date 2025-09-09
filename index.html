@@ -140,6 +140,25 @@
             padding: 5px;
             border-radius: 4px;
         }
+        .subject-item-buttons .edit-btn, .subject-item-buttons .delete-btn {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 5px;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        .subject-item-buttons .edit-btn:hover, .subject-item-buttons .delete-btn:hover {
+            color: #212529;
+        }
+        .subject-name-input {
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 1px solid #0d6efd;
+            padding: 5px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -437,6 +456,72 @@
         } catch (error) {
             console.error("과목 로딩 중 오류:", error);
             showFeedback('과목을 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    /** 과목 이름 수정을 시작하는 함수 */
+function startEditSubject(subjectId, currentName) {
+    const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
+    nameContainer.innerHTML = `
+        <input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">
+        <button class="button light-button" style="margin: 0 5px;" onclick="cancelEdit()">취소</button>
+        <button class="button primary-button" style="margin: 0;" onclick="saveSubjectUpdate('${subjectId}')">저장</button>
+    `;
+    document.getElementById(`edit-subject-input-${subjectId}`).focus();
+}
+
+/** 과목 이름 수정 내용을 저장하는 함수 */
+async function saveSubjectUpdate(subjectId) {
+    const input = document.getElementById(`edit-subject-input-${subjectId}`);
+    const newName = input.value.trim();
+    if (!newName) {
+        showFeedback("과목 이름은 비워둘 수 없습니다.");
+        return;
+    }
+    try {
+        await db.collection('subjects').doc(subjectId).update({ name: newName });
+        showFeedback("과목 이름이 수정되었습니다.", "success");
+        await loadSubjects();
+    } catch (error) {
+        console.error("과목 이름 수정 중 오류:", error);
+        showFeedback("과목 이름 수정 중 오류가 발생했습니다.");
+    }
+}
+
+    /** 과목 이름 수정을 취소하고 원래대로 되돌리는 함수 */
+    function cancelEdit() {
+        loadSubjects(); // 간단하게 목록을 다시 로드하여 수정 상태를 취소
+    }
+    
+    /** 과목과 그 하위 문제들을 모두 삭제하는 함수 (2단계 확인) */
+    async function deleteSubject(subjectId, subjectName) {
+        const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
+        if (deleteBtn.textContent !== '🗑️ 삭제 확인') {
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.innerHTML = '🗑️ 삭제 확인';
+            deleteBtn.style.color = '#dc3545';
+            setTimeout(() => {
+                deleteBtn.innerHTML = originalText;
+                deleteBtn.style.color = '#6c757d';
+            }, 4000);
+            return;
+        }
+    
+        showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
+        try {
+            const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
+            const batch = db.batch();
+            questionsSnapshot.forEach(doc => batch.delete(doc.ref));
+            
+            const subjectRef = db.collection('subjects').doc(subjectId);
+            batch.delete(subjectRef);
+            
+            await batch.commit();
+            showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success');
+            await loadSubjects();
+        } catch (error) {
+            console.error("과목 삭제 중 오류:", error);
+            showFeedback('과목 삭제 중 오류가 발생했습니다.');
         }
     }
         
