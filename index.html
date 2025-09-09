@@ -6,21 +6,26 @@
     <title>나만의 CBT</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px H12px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
+        
         .button { width: 100%; padding: 12px; font-size: 1rem; border-radius: 6px; cursor: pointer; margin-top: 10px; border: 1px solid #dee2e6; font-weight: 600; transition: all 0.2s ease-in-out; }
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .primary-button:hover { background-color: #0b5ed7; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
         .light-button { background-color: #f8f9fa; color: #212529; }
         .light-button:hover { background-color: #e2e6ea; }
+        
         #auth-container { display: flex; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
+        
         .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; }
         .subject-item-name { font-weight: 600; font-size: 1.1rem; margin-bottom: 10px; display: block; }
         .subject-item-buttons { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
         .subject-item-buttons .button { width: auto; margin: 0; padding: 8px 12px; font-size: 0.9em; }
+        .subject-name-container { display: flex; align-items: center; margin-bottom: 12px; }
+        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
@@ -28,16 +33,15 @@
         .dynamic-field-group .inputs { flex-grow: 1; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
         .remove-btn { padding: 8px 12px; font-size: 0.9em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; }
+        
         .subject-item-name { font-weight: bold; }
-        .subject-item-buttons { display: flex; gap: 10px; }
-        .subject-item-buttons .button { width: auto; margin: 0; padding: 8px 12px; font-size: 0.9em; }
+    
         .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .question-item-text { flex-grow: 1; margin-right: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .question-item-button { flex-shrink: 0; width: auto; margin: 0; padding: 6px 10px; font-size: 0.9em; }
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
-        .#feedback-bar { padding: 12px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-weight: bold; transition: opacity 0.3s; }
+        #feedback-bar { padding: 12px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-weight: bold; }
         #feedback-bar.success { background-color: #d1e7dd; color: #0f5132; }
         #feedback-bar.error { background-color: #f8d7da; color: #842029; }
         .final-result { text-align: center; padding: 20px; }
@@ -73,10 +77,13 @@
 
         /* ✨ 점진적 학습 기능 스타일 추가 ✨ */
         .goal-input-group { display: flex; align-items: center; gap: 8px; }
-        #goal-view h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
+
+        #goal-view { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .goal-input-group { display: flex; align-items: center; gap: 8px; }
+        #goal-view label, .subject-goal-controls label { white-space: nowrap; font-size: 0.9em; }
+        #goal-view input[type="number"] { width: 80px; text-align: center; }
+        #goal-view .button { width: auto; margin: 0; }
+        
         .goal-setup {
             display: flex;
             gap: 10px;
@@ -118,9 +125,15 @@
             color: #842029;
         }
         .subject-goal-controls label, .goal-input-group label { white-space: nowrap; font-size: 0.9em; }
-        .subject-goal-controls input[type="number"], .goal-input-group input[type="number"] { width: 60px; padding: 5px; text-align: center; }
+        .subject-goal-controls input[type="number"] { width: 60px; padding: 5px; text-align: center; }
         .subject-goal-controls .button, .goal-input-group .button { width: auto; padding: 5px 10px; margin: 0; }
 
+        .subject-item-buttons .edit-btn, .subject-item-buttons .delete-btn { background: none; border: none; cursor: pointer; padding: 5px; font-size: 1.1rem; color: #6c757d; }
+        
+        .subject-item-buttons .edit-btn:hover, .subject-item-buttons .delete-btn:hover { color: #212529; }
+        
+        .subject-name-input { font-size: 1.1rem; font-weight: 600; border: 1px solid #0d6efd; padding: 5px; border-radius: 4px; flex-grow: 1; }
+        
         .subject-item-buttons .edit-btn, .subject-item-buttons .delete-btn {
             background-color: transparent;
             border: none;
@@ -130,35 +143,9 @@
             font-size: 0.8em;
             color: #6c757d;
         }
-        .subject-item-buttons .edit-btn:hover, .subject-item-buttons .delete-btn:hover {
-            color: #212529;
-        }
-        .subject-name-input {
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: 1px solid #0d6efd;
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .subject-item-buttons .edit-btn, .subject-item-buttons .delete-btn {
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            margin-left: 5px;
-            font-size: 0.8em;
-            color: #6c757d;
-        }
-        .subject-item-buttons .edit-btn:hover, .subject-item-buttons .delete-btn:hover {
-            color: #212529;
-        }
-        .subject-name-input {
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: 1px solid #0d6efd;
-            padding: 5px;
-            border-radius: 4px;
-        }
+
+        .subject-goal-controls .button { width: auto; padding: 5px 10px; margin: 0; }
+        
     </style>
 </head>
 <body>
@@ -273,14 +260,7 @@
             <button class="button primary-button" onclick="logIn()">로그인</button>
             <button class="button light-button" onclick="showView('subject-view')">취소</button>
         </div>
-        <div id="signup-view" class="hidden">
-            <h2>회원가입</h2>
-            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
-            <div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div>
-            <button class="button primary-button" onclick="signUp()">회원가입</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-    </div> 
+        
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -302,7 +282,7 @@
 
     // 전역 변수
     let currentSubjectId, currentSubjectData;
-    let quizProblemsAttempted = 0;
+    let quizProblemsAttempted = 0, quizScore = 0;
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view'];
@@ -320,22 +300,13 @@
     async function addSubject() {
         const input = document.getElementById('new-subject-name');
         const subjectName = input.value.trim();
-        if (!subjectName) {
-            showFeedback('과목 이름을 입력해주세요.');
-            return;
-        }
+        if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; }
         try {
-            await db.collection('subjects').add({
-                name: subjectName,
-                questionCount: 0,
-            });
+            await db.collection('subjects').add({ name: subjectName, questionCount: 0 });
             showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success');
             hideAddSubjectForm();
             await loadSubjects();
-        } catch (error) {
-            console.error("과목 추가 중 오류:", error);
-            showFeedback('과목 추가 중 오류가 발생했습니다.');
-        }
+        } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); }
     }
 
     /** 과목 추가 입력 창을 보여주는 함수 */
@@ -461,113 +432,93 @@
 
     /** 과목 이름 수정을 시작하는 함수 */
 function startEditSubject(subjectId, currentName) {
-    const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
-    nameContainer.innerHTML = `
-        <input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">
-        <button class="button light-button" style="margin: 0 5px;" onclick="cancelEdit()">취소</button>
-        <button class="button primary-button" style="margin: 0;" onclick="saveSubjectUpdate('${subjectId}')">저장</button>
-    `;
-    document.getElementById(`edit-subject-input-${subjectId}`).focus();
-}
+        const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
+        const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons');
+        nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`;
+        buttonsContainer.innerHTML = `
+            <button class="button light-button" onclick="cancelEdit()">취소</button>
+            <button class="button primary-button" onclick="saveSubjectUpdate('${subjectId}')">저장</button>
+        `;
+        document.getElementById(`edit-subject-input-${subjectId}`).focus();
+    }
 
 /** 과목 이름 수정 내용을 저장하는 함수 */
 async function saveSubjectUpdate(subjectId) {
-    const input = document.getElementById(`edit-subject-input-${subjectId}`);
-    const newName = input.value.trim();
-    if (!newName) {
-        showFeedback("과목 이름은 비워둘 수 없습니다.");
-        return;
-    }
-    try {
-        await db.collection('subjects').doc(subjectId).update({ name: newName });
-        showFeedback("과목 이름이 수정되었습니다.", "success");
+        const input = document.getElementById(`edit-subject-input-${subjectId}`);
+        const newName = input.value.trim();
+        if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; }
+        try {
+            await db.collection('subjects').doc(subjectId).update({ name: newName });
+            showFeedback("과목 이름이 수정되었습니다.", "success");
+        } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); }
         await loadSubjects();
-    } catch (error) {
-        console.error("과목 이름 수정 중 오류:", error);
-        showFeedback("과목 이름 수정 중 오류가 발생했습니다.");
     }
-}
 
     /** 과목 이름 수정을 취소하고 원래대로 되돌리는 함수 */
-    function cancelEdit() {
-        loadSubjects(); // 간단하게 목록을 다시 로드하여 수정 상태를 취소
-    }
+    function cancelEdit() { loadSubjects(); }
     
     /** 과목과 그 하위 문제들을 모두 삭제하는 함수 (2단계 확인) */
     async function deleteSubject(subjectId, subjectName) {
         const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
-        if (deleteBtn.textContent !== '🗑️ 삭제 확인') {
-            const originalText = deleteBtn.innerHTML;
+        if (deleteBtn.innerHTML !== '🗑️ 삭제 확인') {
+            const originalHTML = deleteBtn.innerHTML;
             deleteBtn.innerHTML = '🗑️ 삭제 확인';
             deleteBtn.style.color = '#dc3545';
             setTimeout(() => {
-                deleteBtn.innerHTML = originalText;
-                deleteBtn.style.color = '#6c757d';
+                const currentBtn = document.getElementById(`delete-btn-${subjectId}`);
+                if (currentBtn) { currentBtn.innerHTML = originalHTML; currentBtn.style.color = '#6c757d'; }
             }, 4000);
             return;
         }
-    
         showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
         try {
             const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
             const batch = db.batch();
             questionsSnapshot.forEach(doc => batch.delete(doc.ref));
-            
             const subjectRef = db.collection('subjects').doc(subjectId);
             batch.delete(subjectRef);
-            
             await batch.commit();
             showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success');
             await loadSubjects();
-        } catch (error) {
-            console.error("과목 삭제 중 오류:", error);
-            showFeedback('과목 삭제 중 오류가 발생했습니다.');
-        }
+        } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); }
     }
         
     // ==================================
     // ## 핵심 유틸리티 함수 ##
     // ==================================
-    function showView(viewId) {
-        views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
+    function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
+    
+    function showFeedback(message, type = 'error') {
+        const feedbackBar = document.getElementById('feedback-bar');
+        feedbackBar.textContent = message;
+        feedbackBar.className = type;
+        feedbackBar.classList.remove('hidden');
+        setTimeout(() => feedbackBar.classList.add('hidden'), 3000);
     }
 
-    function getTodayDateString() {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
+    function getTodayDateString() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
 
     // ==================================
     // ## DB 저장/로드 함수 ##
     // ==================================
     async function saveDailyLog() {
-        const user = auth.currentUser;
-        if (!user) return;
+        const user = auth.currentUser; if (!user) return;
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(getTodayDateString());
-        const logData = {
-            totalGoal: dailyGoal,
-            totalProgress: dailyProgress,
-            subjectGoals: subjectGoals,
-            subjectProgress: subjectProgress,
-            lastUpdated: new Date()
-        };
-        try {
-            await logRef.set(logData, { merge: true });
-        } catch (error) { console.error("학습 기록 저장 중 오류:", error); }
+        const logData = { totalGoal: dailyGoal, totalProgress: dailyProgress, subjectGoals: subjectGoals, subjectProgress: subjectProgress, lastUpdated: new Date() };
+        try { await logRef.set(logData, { merge: true }); } catch (error) { console.error("학습 기록 저장 중 오류:", error); }
     }
+        
 
     async function loadDailyLog() {
-        const user = auth.currentUser;
-        if (!user) return;
+        const user = auth.currentUser; if (!user) return;
         const logRef = db.collection('users').doc(user.uid).collection('daily_logs').doc(getTodayDateString());
         try {
             const doc = await logRef.get();
             if (doc.exists) {
                 const data = doc.data();
-                dailyGoal = data.totalGoal || 0;
-                dailyProgress = data.totalProgress || 0;
-                subjectGoals = data.subjectGoals || {};
-                subjectProgress = data.subjectProgress || {};
+                dailyGoal = data.totalGoal || 0; dailyProgress = data.totalProgress || 0;
+                subjectGoals = data.subjectGoals || {}; subjectProgress = data.subjectProgress || {};
                 if (dailyGoal > 0) {
                     document.getElementById('goal-setup-view').classList.add('hidden');
                     document.getElementById('goal-status-view').classList.remove('hidden');
@@ -585,14 +536,12 @@ async function saveSubjectUpdate(subjectId) {
         const loggedOutView = document.getElementById('logged-out-view');
         const userEmailSpan = document.getElementById('user-email');
         if (user) {
-            loggedInView.classList.remove('hidden');
-            loggedOutView.classList.add('hidden');
+            loggedInView.classList.remove('hidden'); loggedOutView.classList.add('hidden');
             userEmailSpan.textContent = `${user.email}님`;
             await loadDailyLog();
             await loadSubjects();
         } else {
-            loggedInView.classList.add('hidden');
-            loggedOutView.classList.remove('hidden');
+            loggedInView.classList.add('hidden'); loggedOutView.classList.remove('hidden');
             userEmailSpan.textContent = '';
             document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
             showView('subject-view');
@@ -620,20 +569,11 @@ async function saveSubjectUpdate(subjectId) {
         saveDailyLog();
     }
 
-    function resetDailyGoal() {
-        dailyGoal = 0;
-        document.getElementById('goal-status-view').classList.add('hidden');
-        document.getElementById('goal-setup-view').classList.remove('hidden');
-        saveDailyLog();
-    }
+    function resetDailyGoal() { dailyGoal = 0; document.getElementById('goal-status-view').classList.add('hidden'); document.getElementById('goal-setup-view').classList.remove('hidden'); saveDailyLog(); }
+        
 
-    function resetDailyProgress() {
-        dailyProgress = 0;
-        updateGoalStatusDisplay();
-        saveDailyLog();
-        showFeedback('진행도가 0으로 초기화되었습니다.', 'success');
-    }
-
+    function resetDailyProgress() { dailyProgress = 0; updateGoalStatusDisplay(); saveDailyLog(); showFeedback('진행도가 0으로 초기화되었습니다.', 'success'); }
+    
     function setSubjectGoal(subjectId) {
         const goalInput = document.getElementById(`goal-input-${subjectId}`);
         const goalValue = parseInt(goalInput.value, 10);
@@ -646,16 +586,12 @@ async function saveSubjectUpdate(subjectId) {
         saveDailyLog();
     }
 
-    function updateGoalStatusDisplay() {
-        document.getElementById('goal-status').innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
-    }
-
-    function updateSubjectStatusDisplay(subjectId) {
+    function updateGoalStatusDisplay() { document.getElementById('goal-status').innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`; }
+    
+        function updateSubjectStatusDisplay(subjectId) {
         const statusSpan = document.getElementById(`subject-goal-status-${subjectId}`);
         if(statusSpan) {
-            const currentProgress = subjectProgress[subjectId] || 0;
-            const currentGoal = subjectGoals[subjectId] || '미설정';
-            statusSpan.textContent = `(달성: ${currentProgress} / ${currentGoal})`;
+            statusSpan.textContent = `(달성: ${subjectProgress[subjectId] || 0} / ${subjectGoals[subjectId] || '미설정'})`;
         }
     }
         
@@ -664,9 +600,7 @@ async function saveSubjectUpdate(subjectId) {
         const progressBefore = dailyProgress;
         dailyProgress += attemptedCount;
         updateGoalStatusDisplay();
-        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
-            showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success');
-        }
+        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) { showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success'); }
     }
     
     // ==================================
@@ -684,17 +618,17 @@ async function saveSubjectUpdate(subjectId) {
                 const subjectName = subject.name;
                 const item = document.createElement('div');
                 item.className = 'subject-item';
-                const currentProgress = subjectProgress[subjectId] || 0;
-                const currentGoal = subjectGoals[subjectId] || '미설정';
                 item.innerHTML = `
                     <div style="flex-grow: 1;">
-                        <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
-                        <div class="subject-goal-controls">
+                        <div id="subject-name-container-${subjectId}">
+                            <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
+                        </div>
+                        <div class="subject-goal-controls" style="margin-top: 10px;">
                             <div class="goal-input-group">
                                 <label for="goal-input-${subjectId}">과목 목표:</label>
                                 <input type="number" id="goal-input-${subjectId}" min="1" value="10">
                                 <button class="button light-button" onclick="setSubjectGoal('${subjectId}')">설정</button>
-                                <span id="subject-goal-status-${subjectId}">(달성: ${currentProgress} / ${currentGoal})</span>
+                                <span id="subject-goal-status-${subjectId}"></span>
                             </div>
                             <div style="margin-top: 5px; font-size: 0.9em; color: #555;">
                                 <input type="checkbox" id="reset-subject-progress-checkbox-${subjectId}" checked>
@@ -705,16 +639,16 @@ async function saveSubjectUpdate(subjectId) {
                     <div class="subject-item-buttons">
                         <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
                         <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
+                        <button class="edit-btn" onclick="startEditSubject('${subjectId}', '${subjectName}')">✏️</button>
+                        <button id="delete-btn-${subjectId}" class="delete-btn" onclick="deleteSubject('${subjectId}', '${subjectName}')">🗑️</button>
                     </div>
                 `;
                 listDiv.appendChild(item);
+                updateSubjectStatusDisplay(subjectId);
             }
             listDiv.insertAdjacentHTML('beforeend', `
                 <div id="add-subject-form" class="hidden" style="margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
-                    <div class="form-group">
-                        <label for="new-subject-name">새 과목 이름</label>
-                        <input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기">
-                    </div>
+                    <div class="form-group"> <label for="new-subject-name" style="font-weight: bold;">새 과목 이름</label> <input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기"> </div>
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <button class="button light-button" style="flex: 1;" onclick="hideAddSubjectForm()">취소</button>
                         <button class="button primary-button" style="flex: 1;" onclick="addSubject()">저장</button>
@@ -722,10 +656,7 @@ async function saveSubjectUpdate(subjectId) {
                 </div>
                 <button id="add-subject-button" class="button primary-button" onclick="showAddSubjectForm()">+ 새 과목 추가</button>
             `);
-        } catch (error) {
-            console.error("과목 로딩 중 오류:", error);
-            showFeedback('과목을 불러오는 중 오류가 발생했습니다.');
-        }
+        } catch (error) { console.error("과목 로딩 중 오류:", error); showFeedback('과목을 불러오는 중 오류가 발생했습니다.'); }
     }
 
     async function manageSubject(id) {
@@ -1003,17 +934,6 @@ async function saveSubjectUpdate(subjectId) {
             await manageSubject(currentSubjectId);
         } catch(e) { console.error("저장 중 오류 발생:", e); alert("저장 중 오류가 발생했습니다."); }
     }
-        
-    /** 과목 이름 수정을 시작하는 함수 */
-function startEditSubject(subjectId, currentName) {
-    const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
-    nameContainer.innerHTML = `
-        <input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">
-        <button class="button light-button" style="margin: 0 5px;" onclick="cancelEdit()">취소</button>
-        <button class="button primary-button" style="margin: 0;" onclick="saveSubjectUpdate('${subjectId}')">저장</button>
-    `;
-    document.getElementById(`edit-subject-input-${subjectId}`).focus();
-}
 
 /** 과목 이름 수정 내용을 저장하는 함수 */
 async function saveSubjectUpdate(subjectId) {
