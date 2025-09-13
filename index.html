@@ -18,22 +18,22 @@
         .light-button { background-color: #f8f9fa; color: #212529; }
         .light-button:hover { background-color: #e2e6ea; }
         .small-button { width: auto; padding: 5px 10px; font-size: 0.8em; margin: 0; }
-        
-       /* 상단 인증 영역 */
+
+        /* 상단 인증 영역 */
         #auth-container { display: flex; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
 
-       /* 피드백 바 */
+        /* 피드백 바 */
         #feedback-bar { padding: 12px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-weight: bold; }
         #feedback-bar.success { background-color: #d1e7dd; color: #0f5132; }
         #feedback-bar.error { background-color: #f8d7da; color: #842029; }
 
-       /* 폼 그룹 */
+        /* 폼 그룹 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
-
+        
         /* 목표 설정 UI */
         #goal-view { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         #goal-view h4 { margin-top: 0; margin-bottom: 15px; }
@@ -42,7 +42,7 @@
         #goal-view input[type="number"] { width: 80px; text-align: center; }
         #goal-view .button { width: auto; margin: 0; }
         #goal-status { font-weight: 600; font-size: 1.1em; }
-        
+
         /* 과목 아이템 */
         .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; }
         .subject-name-container { display: flex; align-items: center; margin-bottom: 12px; }
@@ -54,13 +54,21 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 5px; font-size: 1.1rem; color: #6c757d; margin-left: 5px; }
         .edit-btn:hover, .delete-btn:hover { color: #212529; }
         .subject-name-input { font-size: 1.1rem; font-weight: 600; border: 1px solid #0d6efd; padding: 5px; border-radius: 4px; flex-grow: 1; }
-
+        
         /* 문제 관리 화면 */
         #add-problem-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         .question-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
         .question-item:last-child { border-bottom: none; }
         .question-item-text { flex-grow: 1; margin-right: 15px; }
         .question-item-actions { display: flex; gap: 10px; }
+
+        /* 퀴즈 화면 */
+        .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
+        .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
+        .feedback { padding: 10px; margin-top: 15px; border-radius: 5px; }
+        .feedback.correct { background-color: #d1e7dd; color: #0f5132; }
+        .feedback.incorrect { background-color: #f8d7da; color: #842029; }
+        .final-result { text-align: center; padding: 20px; }
         
         .dynamic-field-group .inputs { flex-grow: 1; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
@@ -71,10 +79,7 @@
         .question-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .question-item-text { flex-grow: 1; margin-right: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .question-item-button { flex-shrink: 0; width: auto; margin: 0; padding: 6px 10px; font-size: 0.9em; }
-        .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
-        .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
-        
-        .final-result { text-align: center; padding: 20px; }
+       
         .final-result h2 { font-size: 2em; margin-bottom: 10px; }
         .final-result p { font-size: 1.2em; }
         
@@ -179,7 +184,13 @@
             <div id="subject-list"></div>
         </div>
 
-        <div id="quiz-view" class="hidden"> <div>          
+        <div id="quiz-view" class="hidden">
+            <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
+            <div id="quiz-body"></div>
+            <div id="immediate-feedback" style="margin-top: 15px;"></div>
+            <hr style="margin:20px 0;">
+            <button class="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
+        </div>
             
         <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
         <div id="quiz-body"></div>
@@ -193,7 +204,7 @@
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
             <div id="add-problem-container" class="hidden"></div>
-            <div style="margin-bottom: 15px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="button primary-button" style="margin-top:0;" onclick="showProblemAddForm()">+ 새 문제 추가</button>
             </div>
             <div id="question-list-container"></div>
@@ -276,6 +287,7 @@
 
     // 전역 변수
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
+    let quizProblemsAttempted = 0, quizScore = 0, currentQuizIndex = 0;
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view'];
@@ -432,7 +444,7 @@
         `;
         document.getElementById(`edit-subject-input-${subjectId}`).focus();
     }
-
+    
     /** 과목 이름 수정 내용을 저장하는 함수 */
     async function saveSubjectUpdate(subjectId) {
         const input = document.getElementById(`edit-subject-input-${subjectId}`);
@@ -955,13 +967,18 @@
     
         async function showManagementView(options = { refetch: true }) {
         showView('management-view');
-        document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+        const header = document.getElementById('management-header');
         const container = document.getElementById('question-list-container');
+        if (!header || !container) return; 
+
+        header.textContent = `[${currentSubjectData.name}] 문제 관리`;
+        
         if (options.refetch) {
             container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">문제 목록 로딩 중...</div>';
             const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
             allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
+        
         container.innerHTML = '';
         if (allQuestionsForSubject.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
@@ -988,11 +1005,11 @@
         const qData = { text: '', answer: '', explanation: '', ...question };
         return `
             <h4>${isEditing ? '문제 수정' : '새 문제 추가'}</h4>
-            <div class="form-group"><label>문제 내용</label><textarea id="q-text">${qData.text}</textarea></div>
+            <div class="form-group"><label>문제 내용</label><textarea id="q-text" rows="2">${qData.text}</textarea></div>
             <div class="form-group"><label>정답</label><input type="text" id="q-answer" value="${qData.answer}"></div>
-            <div class="form-group"><label>해설 (선택)</label><textarea id="q-explanation">${qData.explanation}</textarea></div>
+            <div class="form-group"><label>해설 (선택)</label><textarea id="q-explanation" rows="2">${qData.explanation}</textarea></div>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="button light-button" onclick="${isEditing ? `cancelProblemEdit('${qData.id}')` : 'hideProblemAddForm()'}">취소</button>
+                <button class="button light-button" onclick="${isEditing ? `cancelProblemEdit()` : 'hideProblemAddForm()'}">취소</button>
                 <button class="button primary-button" onclick="${isEditing ? `saveProblemUpdate('${qData.id}')` : 'saveNewProblem()'}">저장</button>
             </div>
         `;
@@ -1083,6 +1100,103 @@
         showFeedback('과목 삭제 중 오류가 발생했습니다.');
     }
 }
+    let quizQuestions = [], selectedOption;
+    async function startQuiz(id) {
+        const doc = await db.collection('subjects').doc(id).get();
+        if (!doc.exists) return;
+        currentSubjectId = id;
+        currentSubjectData = doc.data();
+        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+        quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
+        
+        currentQuizIndex = 0;
+        quizScore = 0;
+        quizProblemsAttempted = 0;
+        showView('quiz-view');
+        displayCurrentQuiz();
+    }
+    async function exitQuiz() {
+        const attempted = quizProblemsAttempted;
+        if (attempted > 0) {
+            updateDailyProgress(attempted);
+            if (subjectGoals[currentSubjectId]) {
+                subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+            }
+            await saveDailyLog();
+        }
+        await loadSubjects();
+        showView('subject-view');
+    }
+    function displayCurrentQuiz() {
+        const quizView = document.getElementById('quiz-view');
+        if (currentQuizIndex >= quizQuestions.length) {
+            quizView.innerHTML = `
+                <div class="final-result">
+                    <h2>🎉 퀴즈가 끝났습니다!</h2>
+                    <p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p>
+                </div>
+                <button class="button primary-button" onclick="exitQuiz()">과목 선택으로 돌아가기</button>
+            `;
+            const attempted = quizProblemsAttempted;
+            if (attempted > 0) {
+                updateDailyProgress(attempted);
+                if (subjectGoals[currentSubjectId]) {
+                    subjectProgress[currentSubjectId] = (subjectProgress[currentSubjectId] || 0) + attempted;
+                }
+                saveDailyLog();
+            }
+            return;
+        }
+        const data = quizQuestions[currentQuizIndex];
+        let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
+        quizView.innerHTML = `
+            <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;">${currentQuizIndex + 1} / ${quizQuestions.length}</div>
+            <div id="quiz-body">
+                <h4>${data.text}</h4>
+                <div>${optionsHTML}</div>
+            </div>
+            <div id="immediate-feedback" style="margin-top: 15px;">
+                <button id="submit-btn" class="button primary-button">정답 확인</button>
+            </div>
+            <hr style="margin:20px 0;">
+            <button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>
+        `;
+
+        quizView.querySelectorAll('.option').forEach(li => {
+            li.onclick = (e) => {
+                const selected = quizView.querySelector('.option.selected');
+                if (selected) selected.classList.remove('selected');
+                e.currentTarget.classList.add('selected');
+                selectedOption = e.currentTarget.textContent;
+            }
+        });
+        quizView.querySelector('#submit-btn').onclick = submitAnswer;
+    }
+    function submitAnswer() {
+        const selectedOptElem = document.querySelector('.option.selected');
+        if (!selectedOptElem) { showFeedback("보기를 선택해주세요."); return; }
+        
+        quizProblemsAttempted++;
+        const data = quizQuestions[currentQuizIndex];
+        const isCorrect = selectedOption === data.answer;
+        const feedbackDiv = document.getElementById('immediate-feedback');
+        
+        let feedbackHTML = '';
+        if (isCorrect) {
+            quizScore++;
+            feedbackHTML = `<div class="feedback correct"><p><strong>정답입니다!</strong></p></div>`;
+        } else {
+            feedbackHTML = `<div class="feedback incorrect"><p><strong>오답입니다.</strong> 정답: ${data.answer}</p></div>`;
+        }
+        if (data.explanation) {
+            feedbackHTML += `<p style="margin-top:10px;"><strong>해설:</strong> ${data.explanation}</p>`;
+        }
+        
+        feedbackHTML += `<button id="next-btn" class="button primary-button">다음 문제 →</button>`;
+        feedbackDiv.innerHTML = feedbackHTML;
+        
+        feedbackDiv.querySelector('#next-btn').onclick = () => { currentQuizIndex++; displayCurrentQuiz(); };
+    }
         
 </script>
 </body>
