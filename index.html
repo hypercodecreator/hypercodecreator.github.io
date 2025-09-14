@@ -662,118 +662,175 @@
     }
 
     async function showManagementView() {
-    showView('management-view');
-    document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
-    const container = document.getElementById('question-list-container');
-    
-    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">문제 목록 로딩 중...</div>';
-    const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
-    allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    container.innerHTML = '';
-    if (allQuestionsForSubject.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
-    } else {
-        allQuestionsForSubject.forEach(q => {
-            const item = document.createElement('div');
-            item.className = 'question-item';
-            item.id = `question-item-${q.id}`;
-            item.innerHTML = `
-                <div class="question-item-text">${q.text}</div>
-                <div class="question-item-actions">
-                    <button class="button light-button small-button" onclick="showProblemEditForm('${q.id}')">수정</button>
-                    <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
-                </div>
-            `;
-            container.appendChild(item);
-        });
+        showView('management-view');
+        document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
+        const container = document.getElementById('question-list-container');
+        
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">문제 목록 로딩 중...</div>';
+        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
+        allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        container.innerHTML = '';
+        if (allQuestionsForSubject.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
+        } else {
+            allQuestionsForSubject.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.id = `question-item-${q.id}`;
+                item.innerHTML = `
+                    <div class="question-item-text">${q.text}</div>
+                    <div class="question-item-actions">
+                        <button class="button light-button small-button" onclick="showProblemEditForm('${q.id}')">수정</button>
+                        <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        hideProblemAddForm();
     }
-    hideProblemAddForm();
-}
 
+    function addDynamicField(type) {
+        const container = document.getElementById(`q-${type}s-container`);
+        const count = container.children.length + 1;
+        const newField = document.createElement('div');
+        newField.className = 'dynamic-field-group';
+        newField.innerHTML = `<span class="field-label">${count}.</span><input type="text" class="q-${type}" placeholder="${type} 내용">`;
+        container.appendChild(newField);
+    }
+    
     function getProblemFormHTML(question = {}) {
-    const isEditing = !!question.id;
-    const qData = { text: '', answer: '', explanation: '', ...question };
-    return `
-        <h4>${isEditing ? '문제 수정' : '새 문제 추가'}</h4>
-        <div class="form-group"><label>문제 내용</label><textarea id="q-text" rows="2">${qData.text}</textarea></div>
-        <div class="form-group"><label>정답</label><input type="text" id="q-answer" value="${qData.answer}"></div>
-        <div class="form-group"><label>해설 (선택)</label><textarea id="q-explanation" rows="2">${qData.explanation}</textarea></div>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="button light-button" onclick="${isEditing ? `cancelProblemEdit()` : 'hideProblemAddForm()'}">취소</button>
-            <button class="button primary-button" onclick="${isEditing ? `saveProblemUpdate('${qData.id}')` : 'saveNewProblem()'}">저장</button>
-        </div>
-    `;
-}
+        const isEditing = !!question.id;
+        const qData = { text: '', answer: '', explanation: '', keywords: [], tags: [], options: [], ...question };
+    
+        // 키워드, 태그, 보기 필드를 동적으로 생성
+        const keywordsHTML = qData.keywords.map((kw, i) => `<div class="dynamic-field-group"><span class="field-label">${i + 1}.</span><input type="text" class="q-keyword" value="${kw}"></div>`).join('');
+        const tagsHTML = qData.tags.map((t, i) => `<div class="dynamic-field-group"><span class="field-label">${i + 1}.</span><input type="text" class="q-tag" value="${t}"></div>`).join('');
+        const optionsHTML = qData.options.map((opt, i) => `<div class="dynamic-field-group"><span class="field-label">${i + 1}.</span><input type="text" class="q-option" value="${opt}"></div>`).join('');
+    
+        return `
+            <h4>${isEditing ? '문제 수정' : '새 문제 추가'}</h4>
+            <div class="form-group">
+                <label>문제 내용</label>
+                <textarea id="q-text" rows="2">${qData.text}</textarea>
+            </div>
+            <div class="form-group">
+                <label>정답</label>
+                <input type="text" id="q-answer" value="${qData.answer}">
+            </div>
+            <div class="form-group">
+                <label>해설 (선택)</label>
+                <textarea id="q-explanation" rows="2">${qData.explanation}</textarea>
+            </div>
+            <hr>
+            <h5>개념 분석 (선택)</h5>
+            <div class="form-group">
+                <label>키워드</label>
+                <div id="q-keywords-container">${keywordsHTML}</div>
+                <button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button>
+            </div>
+            <div class="form-group">
+                <label>태그</label>
+                <div id="q-tags-container">${tagsHTML}</div>
+                <button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button>
+            </div>
+            <hr>
+            <h5>객관식 보기 (선택)</h5>
+            <div id="q-options-container">${optionsHTML}</div>
+            <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
+            <hr>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="button light-button" onclick="${isEditing ? `cancelProblemEdit()` : 'hideProblemAddForm()'}">취소</button>
+                <button class="button primary-button" onclick="${isEditing ? `saveProblemUpdate('${qData.id}')` : 'saveNewProblem()'}">저장</button>
+            </div>
+        `;
+    }
 
     function showProblemAddForm() {
-    const container = document.getElementById('add-problem-container');
-    container.innerHTML = getProblemFormHTML();
-    container.classList.remove('hidden');
-}
-
-function hideProblemAddForm() {
-    const container = document.getElementById('add-problem-container');
-    container.innerHTML = '';
-    container.classList.add('hidden');
-}
-
-async function saveNewProblem() {
-    const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), explanation: document.getElementById('q-explanation').value.trim() };
-    if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
-    try {
-        const subjectRef = db.collection('subjects').doc(currentSubjectId);
-        await subjectRef.collection('questions').add(data);
-        await db.runTransaction(async t => {
-            const doc = await t.get(subjectRef);
-            t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
-        });
-        showFeedback("새 문제가 추가되었습니다.", "success");
-        await showManagementView();
-    } catch (error) { console.error(error); showFeedback("문제 추가 중 오류 발생"); }
-}
-
-function showProblemEditForm(questionId) {
-    const question = allQuestionsForSubject.find(q => q.id === questionId);
-    const itemDiv = document.getElementById(`question-item-${questionId}`);
-    itemDiv.innerHTML = getProblemFormHTML(question);
-}
-
-async function saveProblemUpdate(questionId) {
-    const data = { text: document.getElementById('q-text').value.trim(), answer: document.getElementById('q-answer').value.trim(), explanation: document.getElementById('q-explanation').value.trim() };
-    if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
-    try {
-        await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(questionId).update(data);
-        showFeedback("문제가 수정되었습니다.", "success");
-        await showManagementView();
-    } catch (error) { console.error(error); showFeedback("문제 수정 중 오류 발생"); }
-}
-
-async function cancelProblemEdit() { await showManagementView(); }
-
-async function deleteProblem(questionId) {
-    const deleteBtn = document.getElementById(`delete-problem-btn-${questionId}`);
-    if (deleteBtn.textContent !== '삭제 확인') {
-        const originalText = deleteBtn.textContent;
-        deleteBtn.textContent = '삭제 확인';
-        deleteBtn.style.backgroundColor = '#f8d7da'; deleteBtn.style.color = '#842029';
-        setTimeout(() => {
-            const currentBtn = document.getElementById(`delete-problem-btn-${questionId}`);
-            if (currentBtn) { currentBtn.textContent = originalText; currentBtn.style.backgroundColor = ''; currentBtn.style.color = ''; }
-        }, 4000);
-        return;
+        const container = document.getElementById('add-problem-container');
+        container.innerHTML = getProblemFormHTML();
+        container.classList.remove('hidden');
     }
-    try {
-        const subjectRef = db.collection('subjects').doc(currentSubjectId);
-        await subjectRef.collection('questions').doc(questionId).delete();
-        await db.runTransaction(async t => {
-            const doc = await t.get(subjectRef);
-            t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
-        });
-        showFeedback("문제가 삭제되었습니다.", "success");
-        await showManagementView();
-    } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
-}
+
+    function hideProblemAddForm() {
+        const container = document.getElementById('add-problem-container');
+        container.innerHTML = '';
+        container.classList.add('hidden');
+    }
+
+    async function saveNewProblem() {
+        const data = {
+            text: document.getElementById('q-text').value.trim(),
+            answer: document.getElementById('q-answer').value.trim(),
+            explanation: document.getElementById('q-explanation').value.trim(),
+            keywords: Array.from(document.querySelectorAll('.q-keyword')).map(i => i.value.trim()).filter(Boolean),
+            tags: Array.from(document.querySelectorAll('.q-tag')).map(i => i.value.trim()).filter(Boolean),
+            options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean)
+        };
+        if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
+    
+        try {
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            await subjectRef.collection('questions').add(data);
+            await db.runTransaction(async t => {
+                const doc = await t.get(subjectRef);
+                t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+            });
+            showFeedback("새 문제가 추가되었습니다.", "success");
+            await showManagementView();
+        } catch (error) { console.error(error); showFeedback("문제 추가 중 오류 발생"); }
+    }
+
+    function showProblemEditForm(questionId) {
+        const question = allQuestionsForSubject.find(q => q.id === questionId);
+        const itemDiv = document.getElementById(`question-item-${questionId}`);
+        itemDiv.innerHTML = getProblemFormHTML(question);
+    }
+
+    async function saveProblemUpdate(questionId) {
+        const data = {
+            text: document.getElementById('q-text').value.trim(),
+            answer: document.getElementById('q-answer').value.trim(),
+            explanation: document.getElementById('q-explanation').value.trim(),
+            keywords: Array.from(document.querySelectorAll('.q-keyword')).map(i => i.value.trim()).filter(Boolean),
+            tags: Array.from(document.querySelectorAll('.q-tag')).map(i => i.value.trim()).filter(Boolean),
+            options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean)
+        };
+        if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
+    
+        try {
+            await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(questionId).update(data);
+            showFeedback("문제가 수정되었습니다.", "success");
+            await showManagementView();
+        } catch (error) { console.error(error); showFeedback("문제 수정 중 오류 발생"); }
+    }
+
+    async function cancelProblemEdit() { await showManagementView(); }
+    
+    async function deleteProblem(questionId) {
+        const deleteBtn = document.getElementById(`delete-problem-btn-${questionId}`);
+        if (deleteBtn.textContent !== '삭제 확인') {
+            const originalText = deleteBtn.textContent;
+            deleteBtn.textContent = '삭제 확인';
+            deleteBtn.style.backgroundColor = '#f8d7da'; deleteBtn.style.color = '#842029';
+            setTimeout(() => {
+                const currentBtn = document.getElementById(`delete-problem-btn-${questionId}`);
+                if (currentBtn) { currentBtn.textContent = originalText; currentBtn.style.backgroundColor = ''; currentBtn.style.color = ''; }
+            }, 4000);
+            return;
+        }
+        try {
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            await subjectRef.collection('questions').doc(questionId).delete();
+            await db.runTransaction(async t => {
+                const doc = await t.get(subjectRef);
+                t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
+            });
+            showFeedback("문제가 삭제되었습니다.", "success");
+            await showManagementView();
+        } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
+    }
     
     // ==================================
     // ## 퀴즈 실행 함수 ##
