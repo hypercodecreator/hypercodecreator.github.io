@@ -201,7 +201,7 @@
         <button class="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
         </div>
 
-        <div id="management-view" class="hidden">
+        <div id="management-view" class="hidden"> </div>
             <h2 id="management-header"></h2>
             <div id="add-problem-container" class="hidden"></div>
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -256,8 +256,6 @@
         </div>
     </div>
 
-        <div id="management-view" class="hidden">
-             </div>
         <div id="login-view" class="hidden">
             <h2>로그인</h2>
             <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
@@ -267,7 +265,7 @@
         </div>
         
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script>
@@ -291,15 +289,6 @@
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view'];
-
-     /** 팝업 대신 피드백 바를 보여주는 새로운 함수 */
-     function showFeedback(message, type = 'error') {
-        const feedbackBar = document.getElementById('feedback-bar');
-        feedbackBar.textContent = message;
-        feedbackBar.className = type;
-        feedbackBar.classList.remove('hidden');
-        setTimeout(() => feedbackBar.classList.add('hidden'), 3000);
-    }
 
     /** 새로운 과목을 Firestore에 추가하는 함수 */
     async function addSubject() {
@@ -493,14 +482,13 @@
     
     function showFeedback(message, type = 'error') {
         const feedbackBar = document.getElementById('feedback-bar');
+        if (!feedbackBar) return;
         feedbackBar.textContent = message;
-        feedbackBar.className = type;
+        feedbackBar.className = type; // 클래스를 직접 설정 (예: 'success' 또는 'error')
         feedbackBar.classList.remove('hidden');
         setTimeout(() => feedbackBar.classList.add('hidden'), 3000);
     }
-    function getTodayDateString() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-
-
+    
     function getTodayDateString() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
     // ==================================
@@ -965,7 +953,7 @@
             await showManagementView({ refetch: true });
         }
     
-        async function showManagementView(options = { refetch: true }) {
+    async function showManagementView(options = { refetch: true }) {
         showView('management-view');
         const header = document.getElementById('management-header');
         const container = document.getElementById('question-list-container');
@@ -1020,6 +1008,7 @@
         container.innerHTML = getProblemFormHTML();
         container.classList.remove('hidden');
     }
+        
     function hideProblemAddForm() {
         const container = document.getElementById('add-problem-container');
         container.innerHTML = '';
@@ -1058,30 +1047,30 @@
     }
     
         async function cancelProblemEdit() { await showManagementView({ refetch: false }); }
-    
+        
         async function deleteProblem(questionId) {
-        const deleteBtn = document.getElementById(`delete-problem-btn-${questionId}`);
-        if (deleteBtn.textContent !== '삭제 확인') {
-            const originalText = deleteBtn.textContent;
-            deleteBtn.textContent = '삭제 확인';
-            deleteBtn.style.backgroundColor = '#f8d7da'; deleteBtn.style.color = '#842029';
-            setTimeout(() => {
-                const currentBtn = document.getElementById(`delete-problem-btn-${questionId}`);
-                if (currentBtn) { currentBtn.textContent = originalText; currentBtn.style.backgroundColor = ''; currentBtn.style.color = ''; }
-            }, 4000);
-            return;
+            const deleteBtn = document.getElementById(`delete-problem-btn-${questionId}`);
+            if (deleteBtn.textContent !== '삭제 확인') {
+                const originalText = deleteBtn.textContent;
+                deleteBtn.textContent = '삭제 확인';
+                deleteBtn.style.backgroundColor = '#f8d7da'; deleteBtn.style.color = '#842029';
+                setTimeout(() => {
+                    const currentBtn = document.getElementById(`delete-problem-btn-${questionId}`);
+                    if (currentBtn) { currentBtn.textContent = originalText; currentBtn.style.backgroundColor = ''; currentBtn.style.color = ''; }
+                }, 4000);
+                return;
+            }
+            try {
+                const subjectRef = db.collection('subjects').doc(currentSubjectId);
+                await subjectRef.collection('questions').doc(questionId).delete();
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
+                });
+                showFeedback("문제가 삭제되었습니다.", "success");
+                await showManagementView({ refetch: true });
+            } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
         }
-        try {
-            const subjectRef = db.collection('subjects').doc(currentSubjectId);
-            await subjectRef.collection('questions').doc(questionId).delete();
-            await db.runTransaction(async t => {
-                const doc = await t.get(subjectRef);
-                t.update(subjectRef, { questionCount: (doc.data().questionCount || 1) - 1 });
-            });
-            showFeedback("문제가 삭제되었습니다.", "success");
-            await showManagementView({ refetch: true });
-        } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
-    }
 
     showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
     try {
@@ -1129,6 +1118,8 @@
     }
     function displayCurrentQuiz() {
         const quizView = document.getElementById('quiz-view');
+        if (!quizView) return;
+        
         if (currentQuizIndex >= quizQuestions.length) {
             quizView.innerHTML = `
                 <div class="final-result">
