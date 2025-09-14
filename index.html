@@ -184,6 +184,16 @@
             <div id="subject-list"></div>
         </div>
 
+        <div id="management-view" class="hidden">
+            <h2 id="management-header"></h2>
+            <div id="add-problem-container" class="hidden"></div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="button primary-button" style="margin-top:0;" onclick="showProblemAddForm()">+ 새 문제 추가</button>
+            </div>
+            <div id="question-list-container"></div>
+            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        </div>
+        
         <div id="quiz-view" class="hidden">
             <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
             <div id="quiz-body"></div>
@@ -201,16 +211,23 @@
         <button class="button light-button" onclick="exitQuiz()">↩️ 과목 선택으로</button>
         </div>
 
-        <div id="management-view" class="hidden"> </div>
-            <h2 id="management-header"></h2>
-            <div id="add-problem-container" class="hidden"></div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="button primary-button" style="margin-top:0;" onclick="showProblemAddForm()">+ 새 문제 추가</button>
-            </div>
-            <div id="question-list-container"></div>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        <div id="login-view" class="hidden">
+            <h2>로그인</h2>
+            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
+            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
+            <button class="button primary-button" onclick="logIn()">로그인</button>
+            <button class="button light-button" onclick="showView('subject-view')">취소</button>
         </div>
 
+        <div id="signup-view" class="hidden">
+            <h2>회원가입</h2>
+            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
+            <div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div>
+            <button class="button primary-button" onclick="signUp()">회원가입</button>
+            <button class="button light-button" onclick="showView('subject-view')">취소</button>
+        </div>
+    </div>
+    
         <div id="tree-view" class="hidden">
             <h2>🌳 지식 트리</h2>
             <div id="tree-container">지식 트리 로딩 중...</div>
@@ -246,25 +263,7 @@
             <button class="button primary-button" onclick="addBulkQuestions()">DB에 저장</button>
             <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
         </div>
-        
-        <div id="signup-view" class="hidden">
-            <h2>회원가입</h2>
-            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
-            <div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div>
-            <button class="button primary-button" onclick="signUp()">회원가입</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-    </div>
 
-        <div id="login-view" class="hidden">
-            <h2>로그인</h2>
-            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
-            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
-            <button class="button primary-button" onclick="logIn()">로그인</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-        
-    
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -484,7 +483,7 @@
         const feedbackBar = document.getElementById('feedback-bar');
         if (!feedbackBar) return;
         feedbackBar.textContent = message;
-        feedbackBar.className = type; // 클래스를 직접 설정 (예: 'success' 또는 'error')
+        feedbackBar.className = type;
         feedbackBar.classList.remove('hidden');
         setTimeout(() => feedbackBar.classList.add('hidden'), 3000);
     }
@@ -538,7 +537,7 @@
             showView('subject-view');
         }
     });
-
+    
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { showFeedback(e.message); } }
     function logOut() { auth.signOut(); }
@@ -662,6 +661,41 @@
         await showManagementView({ refetch: true });
     }
 
+    async function showManagementView(options = { refetch: true }) {
+        showView('management-view');
+        const header = document.getElementById('management-header');
+        const container = document.getElementById('question-list-container');
+        if (!header || !container) return; 
+
+        header.textContent = `[${currentSubjectData.name}] 문제 관리`;
+        
+        if (options.refetch) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">문제 목록 로딩 중...</div>';
+            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
+            allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        
+        container.innerHTML = '';
+        if (allQuestionsForSubject.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
+        } else {
+            allQuestionsForSubject.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.id = `question-item-${q.id}`;
+                item.innerHTML = `
+                    <div class="question-item-text">${q.text}</div>
+                    <div class="question-item-actions">
+                        <button class="button light-button small-button" onclick="showProblemEditForm('${q.id}')">수정</button>
+                        <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        hideProblemAddForm();
+    }
+    
     // ==================================
     // ## 퀴즈 실행 함수 ##
     // ==================================
@@ -952,41 +986,6 @@
             currentSubjectData = doc.data();
             await showManagementView({ refetch: true });
         }
-    
-    async function showManagementView(options = { refetch: true }) {
-        showView('management-view');
-        const header = document.getElementById('management-header');
-        const container = document.getElementById('question-list-container');
-        if (!header || !container) return; 
-
-        header.textContent = `[${currentSubjectData.name}] 문제 관리`;
-        
-        if (options.refetch) {
-            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">문제 목록 로딩 중...</div>';
-            const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
-            allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        
-        container.innerHTML = '';
-        if (allQuestionsForSubject.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
-        } else {
-            allQuestionsForSubject.forEach(q => {
-                const item = document.createElement('div');
-                item.className = 'question-item';
-                item.id = `question-item-${q.id}`;
-                item.innerHTML = `
-                    <div class="question-item-text">${q.text}</div>
-                    <div class="question-item-actions">
-                        <button class="button light-button small-button" onclick="showProblemEditForm('${q.id}')">수정</button>
-                        <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-        hideProblemAddForm();
-    }
     
         function getProblemFormHTML(question = {}) {
         const isEditing = !!question.id;
