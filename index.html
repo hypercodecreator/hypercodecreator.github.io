@@ -9,7 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
-        
+
         /* 버튼 */
         .button { width: 100%; padding: 12px; font-size: 1rem; border-radius: 6px; cursor: pointer; margin-top: 10px; border: 1px solid #dee2e6; font-weight: 600; transition: all 0.2s ease-in-out; }
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
@@ -29,13 +29,13 @@
         #feedback-bar.success { background-color: #d1e7dd; color: #0f5132; }
         #feedback-bar.error { background-color: #f8d7da; color: #842029; }
 
-        /* 폼 그룹 & 입력창 */
+        /* 폼 그룹 & 입력창 스타일 통일 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
-        .dynamic-field-group input { flex-grow: 1; font-size: 1em !important; } /* ✨ 입력창 글자 크기 키움 */
+        .dynamic-field-group input { flex-grow: 1; font-size: 1em !important; }
         .remove-btn { padding: 5px 10px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
 
         /* 목표 설정 UI */
@@ -67,7 +67,7 @@
         .question-item-display:hover { background-color: #f8f9fa; }
         .question-item-text { flex-grow: 1; margin-right: 15px; }
         .question-item-actions { display: flex; gap: 10px; }
-        .simple-edit-form { padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; margin: 10px; }
+        .simple-edit-form { padding: 15px; background-color: #f0f2f5; }
         .simple-edit-form input { font-size: 1em; }
 
         /* 퀴즈 화면 */
@@ -157,25 +157,20 @@
 <body>
     <div class="container">
         <div id="feedback-bar" class="hidden"></div>
+        
         <div id="auth-container">
             <span id="user-email"></span>
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
             <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
 
-        <div id="subject-view">
+       <div id="subject-view">
             <h2>과목 선택</h2>
             <div id="goal-view">
                 <h4>🎯 오늘의 학습 목표</h4>
                 <div id="goal-setup-view">
-                    <div class="goal-input-group">
-                        <input type="number" id="goal-input" min="1" value="10">
-                        <button class="button primary-button" onclick="setDailyGoal()">목표 설정</button>
-                    </div>
-                    <div style="margin-top: 8px; font-size: 0.9em; color: #555;">
-                        <input type="checkbox" id="reset-progress-checkbox" checked>
-                        <label for="reset-progress-checkbox">진행도 함께 초기화</label>
-                    </div>
+                    <div class="goal-input-group"><input type="number" id="goal-input" min="1" value="10"><button class="button primary-button" onclick="setDailyGoal()">목표 설정</button></div>
+                    <div style="margin-top: 8px; font-size: 0.9em; color: #555;"><input type="checkbox" id="reset-progress-checkbox" checked><label for="reset-progress-checkbox">진행도 함께 초기화</label></div>
                 </div>
                 <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
                     <span id="goal-status" style="flex-grow: 1;"></span>
@@ -187,15 +182,17 @@
         </div>
 
         <div id="management-view" class="hidden">
-        <h2 id="management-header"></h2>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button class="button primary-button" style="margin-top:0;" onclick="showFullEditView()">+ 새 문제 추가</button>
+            <h2 id="management-header"></h2>
+            <div id="add-problem-container" class="hidden"></div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="button primary-button" style="margin-top:0;" onclick="showFullEditView()">+ 새 문제 추가</button>
+            </div>
+            <div id="question-list-container" style="border: 1px solid #eee; border-radius: 8px;"></div>
+            <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>
         </div>
-        <div id="question-list-container" style="border: 1px solid #eee; border-radius: 8px;"></div>
-        <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>
-    </div>
         
-        <div id="quiz-view" class="hidden">
+        <div id="quiz-view" class="hidden"> </div>
+            
             <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
             <div id="quiz-body"></div>
             <div id="immediate-feedback" style="margin-top: 15px;"></div>
@@ -240,7 +237,7 @@
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
             <h4>1. 문제 정보</h4>
-            <div class="form-group"><textarea id="q-text-full" rows="3"></textarea></div>
+            <div class="form-group"><textarea id="q-text-full" rows="3" placeholder="문제 내용"></textarea></div>
             <div class="form-group"><input type="text" id="q-answer-full" placeholder="정답"></div>
             <div class="form-group"><textarea id="q-explanation-full" rows="3" placeholder="해설 (선택)"></textarea></div>
             <hr>
@@ -253,11 +250,10 @@
             <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
             <hr>
             <div style="display:flex; gap: 10px;">
-                <button class="button light-button" onclick="showManagementView()">취소</button>
-                <button id="save-full-btn" class="button primary-button">저장</button>
+                <button id="save-full-btn" class="button primary-button" style="flex:1;">저장</button>
+                <button class="button light-button" style="flex:1;" onclick="showManagementView()">취소</button>
             </div>
             <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; display:flex; gap: 10px;">
-                <button class="button light-button" onclick="showManagementView()">📋 문제 관리로</button>
                 <button class="button light-button" onclick="showView('subject-view')">📚 과목 선택으로</button>
             </div>
         </div>
@@ -702,29 +698,23 @@
         const itemDiv = document.getElementById(`question-item-${questionId}`);
         itemDiv.innerHTML = `
             <div class="simple-edit-form">
-                <div class="form-group">
-                    <input type="text" id="simple-q-text" value="${question.text}" placeholder="문제 내용">
-                </div>
-                <div class="form-group">
-                    <input type="text" id="simple-q-answer" value="${question.answer || ''}" placeholder="정답">
-                </div>
+                <div class="form-group"><input type="text" id="simple-q-text" value="${question.text}" placeholder="문제 내용"></div>
+                <div class="form-group"><input type="text" id="simple-q-answer" value="${question.answer || ''}" placeholder="정답"></div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button class="button light-button small-button" onclick="showManagementView()">취소</button>
                     <button class="button primary-button small-button" onclick="saveSimpleUpdate('${questionId}')">저장</button>
                 </div>
             </div>
         `;
+        document.getElementById('simple-q-text').focus();
     }
 
     async function saveSimpleUpdate(questionId) {
-        const data = {
-            text: document.getElementById('simple-q-text').value.trim(),
-            answer: document.getElementById('simple-q-answer').value.trim(),
-        };
+        const data = { text: document.getElementById('simple-q-text').value.trim(), answer: document.getElementById('simple-q-answer').value.trim() };
         if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
         try {
             await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(questionId).update(data);
-            showFeedback("문제가 수정되었습니다.", "success");
+            showFeedback("문제가 간단하게 수정되었습니다.", "success");
             await showManagementView();
         } catch (error) { console.error(error); showFeedback("문제 수정 중 오류 발생"); }
     }
@@ -737,28 +727,28 @@
         document.getElementById('add-edit-header').textContent = isEditing ? '문제 전체 수정' : '새 문제 추가';
         document.getElementById('editing-question-id').value = questionId || '';
         
-        // 필드 채우기
         document.getElementById('q-text-full').value = question.text || '';
         document.getElementById('q-answer-full').value = question.answer || '';
         document.getElementById('q-explanation-full').value = question.explanation || '';
-    
+
         ['keyword', 'tag', 'option'].forEach(type => {
             const container = document.getElementById(`q-${type}s-container`);
             container.innerHTML = '';
-            (question[type+'s'] || []).forEach(val => addDynamicField(type, val));
+            (question[type + 's'] || []).forEach(val => addDynamicField(type, val));
         });
-    
+
         document.getElementById('save-full-btn').onclick = () => saveFullUpdate(questionId);
     }
     
     function addDynamicField(type, value = '') {
         const container = document.getElementById(`q-${type}s-container`);
+        if(!container) return;
         const count = container.children.length + 1;
         const newField = document.createElement('div');
         newField.className = 'dynamic-field-group';
         newField.innerHTML = `
             <span class="field-label">${count}.</span>
-            <input type="text" class="q-${type}" value="${value}">
+            <input type="text" class="q-${type}" value="${value}" placeholder="${type} 내용">
             <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
         `;
         container.appendChild(newField);
@@ -774,13 +764,13 @@
             options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean)
         };
         if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
-    
+
         try {
             const subjectRef = db.collection('subjects').doc(currentSubjectId);
-            if (questionId) { // 수정
+            if (questionId) {
                 await subjectRef.collection('questions').doc(questionId).update(data);
                 showFeedback("문제가 수정되었습니다.", "success");
-            } else { // 추가
+            } else {
                 await subjectRef.collection('questions').add(data);
                 await db.runTransaction(async t => {
                     const doc = await t.get(subjectRef);
