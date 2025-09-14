@@ -18,26 +18,26 @@
         .light-button { background-color: #f8f9fa; color: #212529; }
         .light-button:hover { background-color: #e2e6ea; }
         .small-button { width: auto; padding: 5px 10px; font-size: 0.8em; margin: 0; }
-        
+
         /* 상단 인증 영역 */
         #auth-container { display: flex; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
-        
+
         /* 피드백 바 */
         #feedback-bar { padding: 12px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-weight: bold; }
         #feedback-bar.success { background-color: #d1e7dd; color: #0f5132; }
         #feedback-bar.error { background-color: #f8d7da; color: #842029; }
-        
-        /* 폼 그룹 */
+
+        /* 폼 그룹 & 입력창 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
-        .dynamic-field-group input { flex-grow: 1; }
+        .dynamic-field-group input { flex-grow: 1; font-size: 1em !important; } /* ✨ 입력창 글자 크기 키움 */
         .remove-btn { padding: 5px 10px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        
+
         /* 목표 설정 UI */
         #goal-view { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         #goal-view h4 { margin-top: 0; margin-bottom: 15px; }
@@ -46,7 +46,7 @@
         #goal-view input[type="number"] { width: 80px; text-align: center; }
         #goal-view .button { width: auto; margin: 0; }
         #goal-status { font-weight: 600; font-size: 1.1em; }
-        
+
         /* 과목 아이템 */
         .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; }
         .subject-name-container { display: flex; align-items: center; margin-bottom: 12px; }
@@ -60,6 +60,7 @@
         .subject-name-input { font-size: 1.1rem; font-weight: 600; border: 1px solid #0d6efd; padding: 5px; border-radius: 4px; flex-grow: 1; }
         
         /* 문제 관리 화면 */
+        #add-problem-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         .question-item { border-bottom: 1px solid #eee; }
         .question-item:last-child { border-bottom: none; }
         .question-item-display { display: flex; align-items: center; padding: 15px; cursor: pointer; }
@@ -67,8 +68,8 @@
         .question-item-text { flex-grow: 1; margin-right: 15px; }
         .question-item-actions { display: flex; gap: 10px; }
         .simple-edit-form { padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; margin: 10px; }
-        .simple-edit-form input { font-size: 1em; } /* ✨ 단순 수정 폼 입력 글자 크기 키움 */
-        
+        .simple-edit-form input { font-size: 1em; }
+
         /* 퀴즈 화면 */
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
         .option.selected { background-color: #dbeafe; border-color: #60a5fa; font-weight: bold; }
@@ -155,17 +156,12 @@
 </head>
 <body>
     <div class="container">
-    <div id="feedback-bar" class="hidden"></div>
-    <div id="auth-container">
-        <span id="user-email"></span>
-        <div id="logged-out-view">
-            <button class="button light-button" onclick="showView('login-view')">로그인</button>
-            <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
+        <div id="feedback-bar" class="hidden"></div>
+        <div id="auth-container">
+            <span id="user-email"></span>
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
-        <div id="logged-in-view" class="hidden">
-            <button class="button secondary-button" onclick="logOut()">로그아웃</button>
-        </div>
-    </div>
 
         <div id="subject-view">
             <h2>과목 선택</h2>
@@ -243,26 +239,26 @@
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
-            
             <h4>1. 문제 정보</h4>
-            <div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div>
-            <div class="form-group"><label for="q-explanation-full">해설 (선택)</label><textarea id="q-explanation-full" rows="3"></textarea></div>
+            <div class="form-group"><textarea id="q-text-full" rows="3"></textarea></div>
+            <div class="form-group"><input type="text" id="q-answer-full" placeholder="정답"></div>
+            <div class="form-group"><textarea id="q-explanation-full" rows="3" placeholder="해설 (선택)"></textarea></div>
             <hr>
-        
             <h4>2. 객관식 보기 (선택)</h4>
             <div id="q-options-container"></div>
             <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
             <hr>
-            
             <h4>3. 개념 분석 (선택)</h4>
             <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
             <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
             <hr>
-        
             <div style="display:flex; gap: 10px;">
                 <button class="button light-button" onclick="showManagementView()">취소</button>
                 <button id="save-full-btn" class="button primary-button">저장</button>
+            </div>
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; display:flex; gap: 10px;">
+                <button class="button light-button" onclick="showManagementView()">📋 문제 관리로</button>
+                <button class="button light-button" onclick="showView('subject-view')">📚 과목 선택으로</button>
             </div>
         </div>
 
@@ -296,7 +292,6 @@
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view', 'add-edit-view'];
-
 
     /** 새로운 과목을 Firestore에 추가하는 함수 */
     async function addSubject() {
@@ -542,7 +537,7 @@
         } else {
             loggedInView.classList.add('hidden'); loggedOutView.classList.remove('hidden');
             userEmailSpan.textContent = '';
-            document.getElementById('subject-list').innerHTML = '<p>로그인 후 이용해주세요.</p>';
+            document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><p>로그인 후 이용해주세요.</p>`;
             showView('subject-view');
         }
     });
@@ -679,7 +674,7 @@
         const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').orderBy('text', 'asc').get();
         allQuestionsForSubject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        container.innerHTML = ''; // 목록 초기화
+        container.innerHTML = '';
         if (allQuestionsForSubject.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다.</p>';
         } else {
@@ -687,7 +682,6 @@
                 const item = document.createElement('div');
                 item.className = 'question-item';
                 item.id = `question-item-${q.id}`;
-                // ✨ 클릭 시 단순 수정 폼이 나타나도록 onclick 이벤트 추가
                 item.innerHTML = `
                     <div class="question-item-display" onclick="startSimpleEdit('${q.id}')">
                         <div class="question-item-text">${q.text}</div>
@@ -700,7 +694,6 @@
                 container.appendChild(item);
             });
         }
-        hideProblemAddForm();
     }
 
     function startSimpleEdit(questionId) {
@@ -710,12 +703,10 @@
         itemDiv.innerHTML = `
             <div class="simple-edit-form">
                 <div class="form-group">
-                    <label>문제 내용</label>
-                    <input type="text" id="simple-q-text" value="${question.text}">
+                    <input type="text" id="simple-q-text" value="${question.text}" placeholder="문제 내용">
                 </div>
                 <div class="form-group">
-                    <label>정답</label>
-                    <input type="text" id="simple-q-answer" value="${question.answer || ''}">
+                    <input type="text" id="simple-q-answer" value="${question.answer || ''}" placeholder="정답">
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button class="button light-button small-button" onclick="showManagementView()">취소</button>
