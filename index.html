@@ -33,7 +33,11 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
-        
+        .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center;}
+        .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
+        .dynamic-field-group input { flex-grow: 1; }
+        .remove-btn { padding: 5px 10px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
         /* 목표 설정 UI */
         #goal-view { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         #goal-view h4 { margin-top: 0; margin-bottom: 15px; }
@@ -54,13 +58,15 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 5px; font-size: 1.1rem; color: #6c757d; margin-left: 5px; }
         .edit-btn:hover, .delete-btn:hover { color: #212529; }
         .subject-name-input { font-size: 1.1rem; font-weight: 600; border: 1px solid #0d6efd; padding: 5px; border-radius: 4px; flex-grow: 1; }
-        
+
         /* 문제 관리 화면 */
-        #add-problem-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-        .question-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
+        .question-item { border-bottom: 1px solid #eee; }
         .question-item:last-child { border-bottom: none; }
-        .question-item-text { flex-grow: 1; margin-right: 15px; }
+        .question-item-display { display: flex; align-items: center; padding: 15px; }
+        .question-item-text { flex-grow: 1; margin-right: 15px; cursor: pointer; }
+        .question-item-text:hover { color: #0d6efd; }
         .question-item-actions { display: flex; gap: 10px; }
+        .simple-edit-form { padding: 15px; background-color: #f8f9fa; }
 
         /* 퀴즈 화면 */
         .option { margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; }
@@ -148,18 +154,17 @@
 </head>
 <body>
     <div class="container">
-        <div id="feedback-bar" class="hidden"></div>
-
-        <div id="auth-container">
-            <span id="user-email"></span>
-            <div id="logged-out-view">
-                <button class="button light-button" onclick="showView('login-view')">로그인</button>
-                <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
-            </div>
-            <div id="logged-in-view" class="hidden">
-                <button class="button secondary-button" onclick="logOut()">로그아웃</button>
-            </div>
+    <div id="feedback-bar" class="hidden"></div>
+    <div id="auth-container">
+        <span id="user-email"></span>
+        <div id="logged-out-view">
+            <button class="button light-button" onclick="showView('login-view')">로그인</button>
+            <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
         </div>
+        <div id="logged-in-view" class="hidden">
+            <button class="button secondary-button" onclick="logOut()">로그아웃</button>
+        </div>
+    </div>
 
         <div id="subject-view">
             <h2>과목 선택</h2>
@@ -185,14 +190,13 @@
         </div>
 
         <div id="management-view" class="hidden">
-            <h2 id="management-header"></h2>
-            <div id="add-problem-container" class="hidden"></div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="button primary-button" style="margin-top:0;" onclick="showProblemAddForm()">+ 새 문제 추가</button>
-            </div>
-            <div id="question-list-container"></div>
-            <button class="button light-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+        <h2 id="management-header"></h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="button primary-button" style="margin-top:0;" onclick="showFullEditView()">+ 새 문제 추가</button>
         </div>
+        <div id="question-list-container" style="border: 1px solid #eee; border-radius: 8px;"></div>
+        <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>
+    </div>
         
         <div id="quiz-view" class="hidden">
             <div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;"></div>
@@ -236,26 +240,26 @@
         </div>
         
         <div id="add-edit-view" class="hidden">
-            <h2 id="add-edit-header"></h2>
-            <input type="hidden" id="editing-question-id">
-            <h4>1. 문제 정보</h4>
-            <div class="form-group"><label for="q-text">문제 내용</label><textarea id="q-text" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-answer">정답</label><input type="text" id="q-answer"></div>
-            <div class="form-group"><label for="q-explanation">해설</label><textarea id="q-explanation" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-part">소속 파트</label><select id="q-part"></select></div>
-            <hr>
-            <h4>2. 개념 분석 (선택)</h4>
-            <div class="form-group"><label>구조화된 키워드</label><div id="q-keywords-container"></div><button class="button light-button" onclick="addKeywordField()">+ 키워드 추가</button></div>
-            <div class="form-group"><label>구조화된 태그</label><div id="q-tags-container"></div><button class="button light-button" onclick="addTagField()">+ 태그 추가</button></div>
-            <div class="form-group"><label>구조화된 메타태그</label><div id="q-metatags-container"></div><button class="button light-button" onclick="addMetatagField()">+ 메타태그 추가</button></div>
-            <hr>
-            <h4>3. 객관식 보기 (선택)</h4>
-            <div id="q-options-container"></div>
-            <button class="button light-button" onclick="addOptionField()">+ 보기 추가</button>
-            <hr>
-            <button id="save-btn" class="button primary-button">저장</button>
-            <button class="button light-button" onclick="showManagementView({ refetch: false })">← 관리 화면으로</button>
+        <h2 id="add-edit-header"></h2>
+        <input type="hidden" id="editing-question-id">
+        <h4>1. 문제 정보</h4>
+        <div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div>
+        <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div>
+        <div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div>
+        <hr>
+        <h4>2. 개념 분석 (선택)</h4>
+        <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
+        <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
+        <hr>
+        <h4>3. 객관식 보기 (선택)</h4>
+        <div id="q-options-container"></div>
+        <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
+        <hr>
+        <div style="display:flex; gap: 10px;">
+            <button class="button light-button" onclick="showManagementView()">취소</button>
+            <button id="save-full-btn" class="button primary-button">저장</button>
         </div>
+    </div>
 
         <div id="bulk-add-view" class="hidden">
              <h2>📚 여러 문제 추가</h2>
@@ -284,10 +288,10 @@
 
     // 전역 변수
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
-    let quizProblemsAttempted = 0, quizScore = 0, currentQuizIndex = 0;
     let dailyGoal = 0, dailyProgress = 0;
     let subjectGoals = {}, subjectProgress = {};
-    const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view'];
+    const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view', 'add-edit-view'];
+
 
     /** 새로운 과목을 Firestore에 추가하는 함수 */
     async function addSubject() {
@@ -658,7 +662,7 @@
         if (!doc.exists) { showFeedback("과목 정보를 찾을 수 없습니다."); return; }
         currentSubjectId = id;
         currentSubjectData = doc.data();
-        await showManagementView(); // 인자 없이 호출하도록 수정
+        await showManagementView();
     }
 
     async function showManagementView() {
@@ -672,32 +676,122 @@
         
         container.innerHTML = '';
         if (allQuestionsForSubject.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다. 새 문제를 추가해보세요.</p>';
+            container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다.</p>';
         } else {
             allQuestionsForSubject.forEach(q => {
                 const item = document.createElement('div');
                 item.className = 'question-item';
                 item.id = `question-item-${q.id}`;
                 item.innerHTML = `
-                    <div class="question-item-text">${q.text}</div>
-                    <div class="question-item-actions">
-                        <button class="button light-button small-button" onclick="showProblemEditForm('${q.id}')">수정</button>
-                        <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
+                    <div class="question-item-display">
+                        <div class="question-item-text" onclick="startSimpleEdit('${q.id}')">${q.text}</div>
+                        <div class="question-item-actions">
+                            <button class="button light-button small-button" onclick="showFullEditView('${q.id}')">전체 수정</button>
+                            <button id="delete-problem-btn-${q.id}" class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(item);
             });
         }
-        hideProblemAddForm();
     }
 
-    function addDynamicField(type) {
+    function startSimpleEdit(questionId) {
+        const question = allQuestionsForSubject.find(q => q.id === questionId);
+        if (!question) return;
+        const itemDiv = document.getElementById(`question-item-${questionId}`);
+        itemDiv.innerHTML = `
+            <div class="simple-edit-form">
+                <div class="form-group">
+                    <label>문제 내용</label>
+                    <input type="text" id="simple-q-text" value="${question.text}">
+                </div>
+                <div class="form-group">
+                    <label>정답</label>
+                    <input type="text" id="simple-q-answer" value="${question.answer || ''}">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="button light-button small-button" onclick="showManagementView()">취소</button>
+                    <button class="button primary-button small-button" onclick="saveSimpleUpdate('${questionId}')">저장</button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function saveSimpleUpdate(questionId) {
+        const data = {
+            text: document.getElementById('simple-q-text').value.trim(),
+            answer: document.getElementById('simple-q-answer').value.trim(),
+        };
+        if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
+        try {
+            await db.collection('subjects').doc(currentSubjectId).collection('questions').doc(questionId).update(data);
+            showFeedback("문제가 수정되었습니다.", "success");
+            await showManagementView();
+        } catch (error) { console.error(error); showFeedback("문제 수정 중 오류 발생"); }
+    }
+
+    function showFullEditView(questionId = null) {
+        showView('add-edit-view');
+        const isEditing = !!questionId;
+        const question = isEditing ? allQuestionsForSubject.find(q => q.id === questionId) : {};
+        
+        document.getElementById('add-edit-header').textContent = isEditing ? '문제 전체 수정' : '새 문제 추가';
+        document.getElementById('editing-question-id').value = questionId || '';
+        
+        // 필드 채우기
+        document.getElementById('q-text-full').value = question.text || '';
+        document.getElementById('q-answer-full').value = question.answer || '';
+        document.getElementById('q-explanation-full').value = question.explanation || '';
+    
+        ['keyword', 'tag', 'option'].forEach(type => {
+            const container = document.getElementById(`q-${type}s-container`);
+            container.innerHTML = '';
+            (question[type+'s'] || []).forEach(val => addDynamicField(type, val));
+        });
+    
+        document.getElementById('save-full-btn').onclick = () => saveFullUpdate(questionId);
+    }
+    
+    function addDynamicField(type, value = '') {
         const container = document.getElementById(`q-${type}s-container`);
         const count = container.children.length + 1;
         const newField = document.createElement('div');
         newField.className = 'dynamic-field-group';
-        newField.innerHTML = `<span class="field-label">${count}.</span><input type="text" class="q-${type}" placeholder="${type} 내용">`;
+        newField.innerHTML = `
+            <span class="field-label">${count}.</span>
+            <input type="text" class="q-${type}" value="${value}">
+            <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        `;
         container.appendChild(newField);
+    }
+
+    async function saveFullUpdate(questionId) {
+        const data = {
+            text: document.getElementById('q-text-full').value.trim(),
+            answer: document.getElementById('q-answer-full').value.trim(),
+            explanation: document.getElementById('q-explanation-full').value.trim(),
+            keywords: Array.from(document.querySelectorAll('.q-keyword')).map(i => i.value.trim()).filter(Boolean),
+            tags: Array.from(document.querySelectorAll('.q-tag')).map(i => i.value.trim()).filter(Boolean),
+            options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean)
+        };
+        if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
+    
+        try {
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            if (questionId) { // 수정
+                await subjectRef.collection('questions').doc(questionId).update(data);
+                showFeedback("문제가 수정되었습니다.", "success");
+            } else { // 추가
+                await subjectRef.collection('questions').add(data);
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+                });
+                showFeedback("새 문제가 추가되었습니다.", "success");
+            }
+            await showManagementView();
+        } catch (error) { console.error(error); showFeedback("저장 중 오류가 발생했습니다."); }
     }
     
     function getProblemFormHTML(question = {}) {
