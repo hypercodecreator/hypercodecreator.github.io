@@ -227,7 +227,7 @@
           messagingSenderId: "1091430877229",
           appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
     };
-        
+
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -237,13 +237,15 @@
     let dailyGoal = 0, dailyProgress = 0;
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0, quizProblemsAttempted = 0;
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view', 'add-edit-view'];
-    // ✨ 추가: 현재 문제 관리 뷰 모드를 저장하는 전역 변수
     let currentManagementViewMode = 'list'; 
 
     // ==================================
     // ## 핵심 유틸리티 함수 ##
     // ==================================
-    function showView(viewId) { views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId)); }
+    function showView(viewId) {
+        views.forEach(id => document.getElementById(id)?.classList.toggle('hidden', id !== viewId));
+    }
+
     function showFeedback(message, type = 'error') {
         const feedbackBar = document.getElementById('feedback-bar');
         if (!feedbackBar) return;
@@ -280,34 +282,28 @@
     // ==================================
     function setDailyGoal() {
         const goalInput = document.getElementById('goal-input');
-        const goalValue = parseInt(goalInput.value, 10);
-        if (isNaN(goalValue) || goalValue <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; }
-        dailyGoal = goalValue;
-        dailyProgress = 0; // 목표 설정 시 진행도는 항상 0으로 초기화
+        const goal = parseInt(goalInput.value, 10);
+        if (isNaN(goal) || goal <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; }
+        dailyGoal = goal;
+        dailyProgress = 0;
         document.getElementById('goal-setup-view').classList.add('hidden');
         document.getElementById('goal-status-view').classList.remove('hidden');
         updateGoalStatusDisplay();
     }
-
     function resetDailyGoal() {
         dailyGoal = 0;
         document.getElementById('goal-status-view').classList.add('hidden');
         document.getElementById('goal-setup-view').classList.remove('hidden');
     }
-    
     function resetDailyProgress() {
         dailyProgress = 0;
         updateGoalStatusDisplay();
         showFeedback('진행도가 0으로 초기화되었습니다.', 'success');
     }
-    
     function updateGoalStatusDisplay() {
-        const goalStatusEl = document.getElementById('goal-status');
-        if (goalStatusEl) {
-           goalStatusEl.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
-        }
+        const el = document.getElementById('goal-status');
+        if (el) el.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
     }
-        
     function updateDailyProgress(attemptedCount) {
         if (dailyGoal <= 0) return;
         const progressBefore = dailyProgress;
@@ -317,7 +313,7 @@
             showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success');
         }
     }
-    
+
     // ==================================
     // ## 과목 관리 함수 ##
     // ==================================
@@ -357,14 +353,81 @@
             `);
         } catch (error) { console.error("과목 로딩 중 오류:", error); showFeedback('과목을 불러오는 중 오류가 발생했습니다.'); }
     }
-    // (addSubject, show/hideAddSubjectForm, start/save/cancel EditSubject, deleteSubject 등 나머지 과목관리 함수는 변경 없음)
-    async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
-    function showAddSubjectForm() { document.getElementById('add-subject-form').classList.remove('hidden'); document.getElementById('add-subject-button').classList.add('hidden'); }
-    function hideAddSubjectForm() { document.getElementById('add-subject-form').classList.add('hidden'); document.getElementById('new-subject-name').value = ''; document.getElementById('add-subject-button').classList.remove('hidden'); }
-    function startEditSubject(subjectId, currentName) { const nameContainer = document.getElementById(`subject-name-container-${subjectId}`); const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons'); cancelEdit(); nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`; buttonsContainer.innerHTML = `<button class="button light-button small-button" onclick="cancelEdit()">취소</button><button class="button primary-button small-button" onclick="saveSubjectUpdate('${subjectId}')">저장</button>`; document.getElementById(`edit-subject-input-${subjectId}`).focus(); }
-    async function saveSubjectUpdate(subjectId) { const input = document.getElementById(`edit-subject-input-${subjectId}`); const newName = input.value.trim(); if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; } try { await db.collection('subjects').doc(subjectId).update({ name: newName }); showFeedback("과목 이름이 수정되었습니다.", "success"); } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); } await loadSubjects(); }
-    function cancelEdit() { loadSubjects(); }
-    async function deleteSubject(subjectId, subjectName) { const deleteBtn = document.getElementById(`delete-btn-${subjectId}`); if (deleteBtn.innerHTML !== '🗑️ 삭제 확인') { const originalHTML = deleteBtn.innerHTML; deleteBtn.innerHTML = '🗑️ 삭제 확인'; deleteBtn.style.color = '#dc3545'; setTimeout(() => { const currentBtn = document.getElementById(`delete-btn-${subjectId}`); if (currentBtn && currentBtn.innerHTML.includes('삭제 확인')) { currentBtn.innerHTML = originalHTML; currentBtn.style.color = '#6c757d'; } }, 4000); return; } showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`); try { const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get(); const batch = db.batch(); questionsSnapshot.forEach(doc => batch.delete(doc.ref)); const subjectRef = db.collection('subjects').doc(subjectId); batch.delete(subjectRef); await batch.commit(); showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success'); await loadSubjects(); } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); } }
+    
+    async function addSubject() {
+        const input = document.getElementById('new-subject-name');
+        const subjectName = input.value.trim();
+        if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; }
+        try {
+            await db.collection('subjects').add({ name: subjectName, questionCount: 0 });
+            showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success');
+            hideAddSubjectForm();
+            await loadSubjects();
+        } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); }
+    }
+
+    function showAddSubjectForm() {
+        document.getElementById('add-subject-form').classList.remove('hidden');
+        document.getElementById('add-subject-button').classList.add('hidden');
+    }
+
+    function hideAddSubjectForm() {
+        document.getElementById('add-subject-form').classList.add('hidden');
+        document.getElementById('new-subject-name').value = '';
+        document.getElementById('add-subject-button').classList.remove('hidden');
+    }
+
+    function startEditSubject(subjectId, currentName) {
+        cancelEdit(); // 다른 수정중인 항목이 있다면 원래대로 되돌림
+        const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
+        const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons');
+        nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`;
+        buttonsContainer.innerHTML = `<button class="button light-button small-button" onclick="cancelEdit()">취소</button><button class="button primary-button small-button" onclick="saveSubjectUpdate('${subjectId}')">저장</button>`;
+        document.getElementById(`edit-subject-input-${subjectId}`).focus();
+    }
+
+    async function saveSubjectUpdate(subjectId) {
+        const input = document.getElementById(`edit-subject-input-${subjectId}`);
+        const newName = input.value.trim();
+        if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; }
+        try {
+            await db.collection('subjects').doc(subjectId).update({ name: newName });
+            showFeedback("과목 이름이 수정되었습니다.", "success");
+        } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); }
+        await loadSubjects();
+    }
+
+    function cancelEdit() {
+        loadSubjects();
+    }
+    
+    async function deleteSubject(subjectId, subjectName) {
+        const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
+        if (deleteBtn.innerHTML !== '🗑️ 삭제 확인') {
+            const originalHTML = deleteBtn.innerHTML;
+            deleteBtn.innerHTML = '🗑️ 삭제 확인';
+            deleteBtn.style.color = '#dc3545';
+            setTimeout(() => {
+                const currentBtn = document.getElementById(`delete-btn-${subjectId}`);
+                if (currentBtn && currentBtn.innerHTML.includes('삭제 확인')) {
+                    currentBtn.innerHTML = originalHTML;
+                    currentBtn.style.color = '#6c757d';
+                }
+            }, 4000);
+            return;
+        }
+        showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
+        try {
+            const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
+            const batch = db.batch();
+            questionsSnapshot.forEach(doc => batch.delete(doc.ref));
+            const subjectRef = db.collection('subjects').doc(subjectId);
+            batch.delete(subjectRef);
+            await batch.commit();
+            showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success');
+            await loadSubjects();
+        } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); }
+    }
 
     // ==================================
     // ## 문제 관리(Management View) 함수 ##
@@ -374,22 +437,19 @@
         if (!doc.exists) { showFeedback("과목 정보를 찾을 수 없습니다."); return; }
         currentSubjectId = id;
         currentSubjectData = doc.data();
-        await showManagementView(true); // 최초 진입 시 DB에서 데이터 다시 로드
+        await showManagementView(true);
     }
 
-    // ✨ 추가: 뷰 모드를 변경하는 함수
     function setManagementViewMode(mode) {
         currentManagementViewMode = mode;
-        showManagementView(false); // 뷰 모드 변경 시에는 DB 재조회 없이 화면만 다시 그림
+        showManagementView(false);
     }
 
-    // ✨ 수정: 뷰 모드에 따라 목록 또는 트리를 렌더링하도록 변경
     async function showManagementView(fetchData = false) {
         showView('management-view');
         document.getElementById('management-header').textContent = `[${currentSubjectData.name}] 문제 관리`;
         const container = document.getElementById('question-list-container');
         
-        // 뷰 토글 버튼 렌더링
         const toggleButtonsContainer = document.getElementById('view-toggle-buttons');
         toggleButtonsContainer.innerHTML = `
             <button class="button ${currentManagementViewMode === 'list' ? 'primary-button' : 'light-button'}" onclick="setManagementViewMode('list')">목록 보기</button>
@@ -408,9 +468,10 @@
             return;
         }
 
-        // 뷰 모드에 따라 분기
         if (currentManagementViewMode === 'list') {
-            // 목록 보기 렌더링
+            const listContainer = document.createElement('div');
+            listContainer.style.border = '1px solid #eee';
+            listContainer.style.borderRadius = '8px';
             allQuestionsForSubject.forEach(q => {
                 const item = document.createElement('div');
                 item.className = 'question-item';
@@ -421,10 +482,10 @@
                         <button class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button>
                     </div>
                 `;
-                container.appendChild(item);
+                listContainer.appendChild(item);
             });
+            container.appendChild(listContainer);
         } else {
-            // 트리 보기 렌더링
             const parts = {};
             allQuestionsForSubject.forEach(q => {
                 const partName = q.partName || '미지정 파트';
@@ -452,9 +513,7 @@
             treeHTML += '</ul></div>';
             container.innerHTML = treeHTML;
 
-            // 트리 이벤트 리스너 추가
             container.querySelector('#tree-container').addEventListener('click', function(e) {
-                // 이벤트 위임: node-text를 클릭했을 때만 expand/collapse 동작
                 if (e.target.classList.contains('node-text')) {
                     const targetLi = e.target.closest('.expandable');
                     if (targetLi) {
@@ -465,26 +524,151 @@
         }
     }
 
-    // (showFullEditView, addDynamicField, saveFullUpdate, deleteProblem 등 나머지 문제관리 함수는 변경 없음)
-    function showFullEditView(questionId = null) { showView('add-edit-view'); const isEditing = !!questionId; const question = isEditing ? allQuestionsForSubject.find(q => q.id === questionId) : {}; document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가'; document.getElementById('editing-question-id').value = questionId || ''; document.getElementById('q-text-full').value = question.text || ''; document.getElementById('q-answer-full').value = question.answer || ''; document.getElementById('q-explanation-full').value = question.explanation || ''; ['keyword', 'tag', 'option'].forEach(type => { const container = document.getElementById(`q-${type}s-container`); container.innerHTML = ''; const items = question[type + 's'] || []; if (items.length === 0) { addDynamicField(type, ''); } else { items.forEach(val => addDynamicField(type, val)); } }); document.getElementById('save-full-btn').onclick = () => saveFullUpdate(questionId); }
-    function addDynamicField(type, value = '') { const container = document.getElementById(`q-${type}s-container`); if(!container) return; const newField = document.createElement('div'); newField.className = 'dynamic-field-group'; const count = container.children.length + 1; const placeholderText = type === 'option' ? '보기 내용' : (type === 'keyword' ? '키워드' : '태그'); newField.innerHTML = `<span class="field-label">${count}.</span><input type="text" class="q-${type}" value="${value}" placeholder="${placeholderText}"><button class="remove-btn" onclick="this.parentElement.remove()">X</button>`; container.appendChild(newField); }
-    async function saveFullUpdate(questionId) { const data = { text: document.getElementById('q-text-full').value.trim(), answer: document.getElementById('q-answer-full').value.trim(), explanation: document.getElementById('q-explanation-full').value.trim(), keywords: Array.from(document.querySelectorAll('.q-keyword')).map(i => i.value.trim()).filter(Boolean), tags: Array.from(document.querySelectorAll('.q-tag')).map(i => i.value.trim()).filter(Boolean), options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean) }; if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; } try { const subjectRef = db.collection('subjects').doc(currentSubjectId); if (questionId) { await subjectRef.collection('questions').doc(questionId).update(data); showFeedback("문제가 수정되었습니다.", "success"); } else { await subjectRef.collection('questions').add(data); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 }); }); showFeedback("새 문제가 추가되었습니다.", "success"); } await showManagementView(true); } catch (error) { console.error(error); showFeedback("저장 중 오류가 발생했습니다."); } }
-    async function deleteProblem(questionId) { const deleteBtn = document.querySelector(`#question-item-${questionId} button, #tree-container button[onclick*="${questionId}"]`); if (deleteBtn && deleteBtn.textContent !== '삭제 확인') { const originalText = deleteBtn.textContent; deleteBtn.textContent = '삭제 확인'; deleteBtn.style.backgroundColor = '#f8d7da'; deleteBtn.style.color = '#842029'; setTimeout(() => { if (deleteBtn) { deleteBtn.textContent = originalText; deleteBtn.style.backgroundColor = ''; deleteBtn.style.color = ''; } }, 4000); return; } try { const subjectRef = db.collection('subjects').doc(currentSubjectId); await subjectRef.collection('questions').doc(questionId).delete(); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: Math.max(0, (doc.data().questionCount || 1) - 1) }); }); showFeedback("문제가 삭제되었습니다.", "success"); await showManagementView(true); } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); } }
+    function showFullEditView(questionId = null) {
+        showView('add-edit-view');
+        const isEditing = !!questionId;
+        const question = isEditing ? allQuestionsForSubject.find(q => q.id === questionId) : {};
+        document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
+        document.getElementById('editing-question-id').value = questionId || '';
+        document.getElementById('q-text-full').value = question.text || '';
+        document.getElementById('q-answer-full').value = question.answer || '';
+        document.getElementById('q-explanation-full').value = question.explanation || '';
+        ['keyword', 'tag', 'option'].forEach(type => {
+            const container = document.getElementById(`q-${type}s-container`);
+            container.innerHTML = '';
+            const items = question[type + 's'] || [];
+            if (items.length === 0) {
+                addDynamicField(type, '');
+            } else {
+                items.forEach(val => addDynamicField(type, val));
+            }
+        });
+        document.getElementById('save-full-btn').onclick = () => saveFullUpdate(questionId);
+    }
 
+    function addDynamicField(type, value = '') {
+        const container = document.getElementById(`q-${type}s-container`);
+        if (!container) return;
+        const newField = document.createElement('div');
+        newField.className = 'dynamic-field-group';
+        const count = container.children.length + 1;
+        const placeholderText = type === 'option' ? '보기 내용' : (type === 'keyword' ? '키워드' : '태그');
+        newField.innerHTML = `<span class="field-label">${count}.</span><input type="text" class="q-${type}" value="${value}" placeholder="${placeholderText}"><button class="remove-btn" onclick="this.parentElement.remove()">X</button>`;
+        container.appendChild(newField);
+    }
+
+    async function saveFullUpdate(questionId) {
+        const data = {
+            text: document.getElementById('q-text-full').value.trim(),
+            answer: document.getElementById('q-answer-full').value.trim(),
+            explanation: document.getElementById('q-explanation-full').value.trim(),
+            keywords: Array.from(document.querySelectorAll('.q-keyword')).map(i => i.value.trim()).filter(Boolean),
+            tags: Array.from(document.querySelectorAll('.q-tag')).map(i => i.value.trim()).filter(Boolean),
+            options: Array.from(document.querySelectorAll('.q-option')).map(i => i.value.trim()).filter(Boolean)
+        };
+        if (!data.text || !data.answer) { showFeedback("문제 내용과 정답은 필수입니다."); return; }
+        try {
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            if (questionId) {
+                await subjectRef.collection('questions').doc(questionId).update(data);
+                showFeedback("문제가 수정되었습니다.", "success");
+            } else {
+                await subjectRef.collection('questions').add(data);
+                await db.runTransaction(async t => {
+                    const doc = await t.get(subjectRef);
+                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
+                });
+                showFeedback("새 문제가 추가되었습니다.", "success");
+            }
+            await showManagementView(true);
+        } catch (error) { console.error(error); showFeedback("저장 중 오류가 발생했습니다."); }
+    }
     
+    async function deleteProblem(questionId) {
+        if (!confirm("정말로 이 문제를 삭제하시겠습니까?")) return;
+        
+        try {
+            const subjectRef = db.collection('subjects').doc(currentSubjectId);
+            await subjectRef.collection('questions').doc(questionId).delete();
+            await db.runTransaction(async t => {
+                const doc = await t.get(subjectRef);
+                t.update(subjectRef, { questionCount: Math.max(0, (doc.data().questionCount || 1) - 1) });
+            });
+            showFeedback("문제가 삭제되었습니다.", "success");
+            await showManagementView(true);
+        } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
+    }
+
     // ==================================
     // ## 퀴즈 실행 함수 ##
     // ==================================
-    async function startQuiz(id) { const doc = await db.collection('subjects').doc(id).get(); if (!doc.exists) return; currentSubjectId = id; currentSubjectData = doc.data(); const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get(); if (snapshot.empty) { showFeedback('퀴즈를 시작하려면 최소 1개 이상의 문제가 필요합니다.'); return; } quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random()); currentQuizIndex = 0; quizScore = 0; quizProblemsAttempted = 0; showView('quiz-view'); displayCurrentQuiz(); }
-    function displayCurrentQuiz() { const quizView = document.getElementById('quiz-view'); if (!quizView) return; if (currentQuizIndex >= quizQuestions.length) { quizView.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div><button class="button primary-button" onclick="exitQuiz()">과목 선택으로 돌아가기</button>`; if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); } return; } const data = quizQuestions[currentQuizIndex]; let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join(''); quizView.innerHTML = `<div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;">${currentQuizIndex + 1} / ${quizQuestions.length}</div><div id="quiz-body"><h4>${data.text}</h4><div>${optionsHTML}</div></div><div id="immediate-feedback" style="margin-top: 15px;"><button id="submit-btn" class="button primary-button">정답 확인</button></div><hr style="margin:20px 0;"><button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>`; quizView.querySelectorAll('.option').forEach(li => { li.onclick = (e) => { const selected = quizView.querySelector('.option.selected'); if (selected) selected.classList.remove('selected'); e.currentTarget.classList.add('selected'); selectedOption = e.currentTarget.textContent; } }); quizView.querySelector('#submit-btn').onclick = submitAnswer; }
-    function submitAnswer() { const selectedOptElem = document.querySelector('.option.selected'); if (!selectedOptElem) { showFeedback("보기를 선택해주세요."); return; } quizProblemsAttempted++; const data = quizQuestions[currentQuizIndex]; const isCorrect = selectedOption === data.answer; const feedbackDiv = document.getElementById('immediate-feedback'); let feedbackHTML = ''; if (isCorrect) { quizScore++; feedbackHTML = `<div class="feedback correct"><p><strong>정답입니다!</strong></p></div>`; } else { feedbackHTML = `<div class="feedback incorrect"><p><strong>오답입니다.</strong> 정답: ${data.answer}</p></div>`; } if (data.explanation) { feedbackHTML += `<p style="margin-top:10px;"><strong>해설:</strong> ${data.explanation}</p>`; } feedbackHTML += `<button id="next-btn" class="button primary-button" style="margin-top: 10px;">다음 문제 →</button>`; feedbackDiv.innerHTML = feedbackHTML; feedbackDiv.querySelector('#next-btn').onclick = () => { currentQuizIndex++; displayCurrentQuiz(); }; }
-    async function exitQuiz() { if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); } await loadSubjects(); showView('subject-view'); }
-    function updateDailyProgress(attemptedCount) { if (dailyGoal <= 0) return; const progressBefore = dailyProgress; dailyProgress += attemptedCount; updateGoalStatusDisplay(); if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) { showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success'); } }
-    function updateGoalStatusDisplay() { const el = document.getElementById('goal-status'); if(el) el.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`; }
-    function setDailyGoal() { const input = document.getElementById('goal-input'); const goal = parseInt(input.value, 10); if (isNaN(goal) || goal <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; } dailyGoal = goal; dailyProgress = 0; document.getElementById('goal-setup-view').classList.add('hidden'); document.getElementById('goal-status-view').classList.remove('hidden'); updateGoalStatusDisplay(); }
-    function resetDailyGoal() { dailyGoal = 0; document.getElementById('goal-status-view').classList.add('hidden'); document.getElementById('goal-setup-view').classList.remove('hidden'); }
-    function resetDailyProgress() { dailyProgress = 0; updateGoalStatusDisplay(); showFeedback('진행도가 0으로 초기화되었습니다.', 'success'); }
+    async function startQuiz(id) {
+        const doc = await db.collection('subjects').doc(id).get();
+        if (!doc.exists) return;
+        currentSubjectId = id;
+        currentSubjectData = doc.data();
+        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
+        if (snapshot.empty) {
+            showFeedback('퀴즈를 시작하려면 최소 1개 이상의 문제가 필요합니다.');
+            return;
+        }
+        quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
+        currentQuizIndex = 0;
+        quizScore = 0;
+        quizProblemsAttempted = 0;
+        showView('quiz-view');
+        displayCurrentQuiz();
+    }
 
+    async function exitQuiz() {
+        if (quizProblemsAttempted > 0) {
+            updateDailyProgress(quizProblemsAttempted);
+        }
+        await loadSubjects();
+        showView('subject-view');
+    }
+
+    function displayCurrentQuiz() {
+        const quizView = document.getElementById('quiz-view');
+        if (!quizView) return;
+        if (currentQuizIndex >= quizQuestions.length) {
+            quizView.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div><button class="button primary-button" onclick="exitQuiz()">과목 선택으로 돌아가기</button>`;
+            if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); }
+            return;
+        }
+        const data = quizQuestions[currentQuizIndex];
+        let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
+        quizView.innerHTML = `<div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;">${currentQuizIndex + 1} / ${quizQuestions.length}</div><div id="quiz-body"><h4>${data.text}</h4><div>${optionsHTML}</div></div><div id="immediate-feedback" style="margin-top: 15px;"><button id="submit-btn" class="button primary-button">정답 확인</button></div><hr style="margin:20px 0;"><button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>`;
+        quizView.querySelectorAll('.option').forEach(li => {
+            li.onclick = (e) => {
+                const selected = quizView.querySelector('.option.selected');
+                if (selected) selected.classList.remove('selected');
+                e.currentTarget.classList.add('selected');
+                selectedOption = e.currentTarget.textContent;
+            }
+        });
+        quizView.querySelector('#submit-btn').onclick = submitAnswer;
+    }
+
+    function submitAnswer() {
+        const selectedOptElem = document.querySelector('.option.selected');
+        if (!selectedOptElem) { showFeedback("보기를 선택해주세요."); return; }
+        quizProblemsAttempted++;
+        const data = quizQuestions[currentQuizIndex];
+        const isCorrect = selectedOption === data.answer;
+        const feedbackDiv = document.getElementById('immediate-feedback');
+        let feedbackHTML = '';
+        if (isCorrect) {
+            quizScore++;
+            feedbackHTML = `<div class="feedback correct"><p><strong>정답입니다!</strong></p></div>`;
+        } else {
+            feedbackHTML = `<div class="feedback incorrect"><p><strong>오답입니다.</strong> 정답: ${data.answer}</p></div>`;
+        }
+        if (data.explanation) {
+            feedbackHTML += `<p style="margin-top:10px;"><strong>해설:</strong> ${data.explanation}</p>`;
+        }
+        feedbackHTML += `<button id="next-btn" class="button primary-button" style="margin-top: 10px;">다음 문제 →</button>`;
+        feedbackDiv.innerHTML = feedbackHTML;
+        feedbackDiv.querySelector('#next-btn').onclick = () => { currentQuizIndex++; displayCurrentQuiz(); };
+    }
 </script>
-</body>
-</html>
