@@ -37,15 +37,6 @@
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
         .dynamic-field-group input { flex-grow: 1; padding: 10px; font-size: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
         .remove-btn { padding: 5px 10px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
-
-        /* ✨ 개선: 동적 필드 입력창의 세로 길이를 다른 입력창과 맞추기 위한 스타일 추가 */
-        .dynamic-field-group input {
-            padding: 10px;
-            font-size: 1em;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
         
         /* 목표 설정 UI */
         #goal-view { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
@@ -64,22 +55,20 @@
         .edit-btn:hover, .delete-btn:hover { color: #212529; }
         .subject-name-input { font-size: 1.1rem; font-weight: 600; border: 1px solid #0d6efd; padding: 5px; border-radius: 4px; }
                 
-        /* ✨ CSS 변경: 문제 관리 화면 & 2분할 레이아웃 */
+        /* 문제 관리 화면 & 2분할 레이아웃 */
         .management-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .view-toggle-buttons .button { margin-top:0; border-radius: 0; }
         .view-toggle-buttons .button:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
         .view-toggle-buttons .button:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-left: 0px; }
-        
         #question-list-container.split-view { display: flex; gap: 20px; }
         #concept-tree-panel { flex: 1; min-width: 250px; border: 1px solid #eee; border-radius: 8px; padding: 10px; height: 500px; overflow-y: auto; }
-        #problem-list-panel { flex: 2; border: 1px solid #eee; border-radius: 8px; padding: 10px; height: 500px; overflow-y: auto; }
-        
+        #problem-list-panel { flex: 2; border: 1px solid #eee; border-radius: 8px; height: 500px; overflow-y: auto; }
         .question-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
         .question-item:last-child { border-bottom: none; }
         .question-item:hover { background-color: #f8f9fa; }
         .question-item-text { flex-grow: 1; margin-right: 15px; }
         .question-item-actions { display: flex; gap: 10px; }
-        .problem-list-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .problem-list-item { padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 0.95em; }
         .problem-list-item:hover { background-color: #f0f2f5; }
         .problem-list-item:last-child { border-bottom: none; }
        
@@ -108,27 +97,16 @@
         
         <div id="auth-container">
             <span id="user-email"></span>
-            <div id="logged-out-view">
-                <button class="button light-button" onclick="showView('login-view')">로그인</button>
-                <button class="button primary-button" onclick="showView('signup-view')">회원가입</button>
-            </div>
-            <div id="logged-in-view" class="hidden">
-                <button class="button secondary-button" onclick="logOut()">로그아웃</button>
-            </div>
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>
         </div>
 
         <div id="subject-view">
             <h2>과목 선택</h2>
             <div id="goal-view">
                 <h4>🎯 오늘의 학습 목표</h4>
-                <div id="goal-setup-view">
-                    <div class="goal-input-group"><input type="number" id="goal-input" min="1" value="10"><button class="button primary-button" onclick="setDailyGoal()">목표 설정</button></div>
-                </div>
-                <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
-                    <span id="goal-status" style="flex-grow: 1;"></span>
-                    <button class="button light-button small-button" onclick="resetDailyProgress()">진행도 0으로</button>
-                    <button class="button light-button small-button" onclick="resetDailyGoal()">목표 재설정</button>
-                </div>
+                <div id="goal-setup-view"><div class="goal-input-group"><input type="number" id="goal-input" min="1" value="10"><button class="button primary-button" onclick="setDailyGoal()">목표 설정</button></div></div>
+                <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;"><span id="goal-status" style="flex-grow: 1;"></span><button class="button light-button small-button" onclick="resetDailyProgress()">진행도 0으로</button><button class="button light-button small-button" onclick="resetDailyGoal()">목표 재설정</button></div>
             </div>
             <div id="subject-list"></div>
         </div>
@@ -144,40 +122,36 @@
         </div>
             
         <div id="quiz-view" class="hidden"></div>
-
-        <div id="login-view" class="hidden">
-            <h2>로그인</h2>
-            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
-            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
-            <button class="button primary-button" onclick="logIn()">로그인</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-
-        <div id="signup-view" class="hidden">
-            <h2>회원가입</h2>
-            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
-            <div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div>
-            <button class="button primary-button" onclick="signUp()">회원가입</button>
-            <button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
+        <div id="login-view" class="hidden"><h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
+        <div id="signup-view" class="hidden"><h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button></div>
         
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
-            <h4>1. 문제 정보</h4>
-            <div class="form-group"><label for="q-text-full">문제</label><textarea id="q-text-full" rows="3" placeholder="문제 내용을 입력하세요"></textarea></div>
-            <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full" placeholder="정답을 입력하세요"></div>
-            <div class="form-group"><label for="q-explanation-full">해설 (선택)</label><textarea id="q-explanation-full" rows="3" placeholder="해설을 입력하세요"></textarea></div>
+            
+            <h4>1. 목차 정보 (계층 구조)</h4>
+            <div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div>
+            <div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div>
+            <div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div>
             <hr>
-            <h4>2. 객관식 보기 (선택)</h4>
+
+            <h4>2. 문제 정보</h4>
+            <div class="form-group"><label for="q-text-full">문제 내용 (필수)</label><textarea id="q-text-full" rows="3" placeholder="문제 내용을 입력하세요"></textarea></div>
+            <div class="form-group"><label for="q-answer-full">정답 (필수)</label><input type="text" id="q-answer-full" placeholder="정답을 입력하세요"></div>
+            <div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3" placeholder="해설을 입력하세요"></textarea></div>
+            <hr>
+
+            <h4>3. 객관식 보기</h4>
             <div id="q-options-container"></div>
             <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
             <hr>
-            <h4>3. 개념 분석 (선택)</h4>
+
+            <h4>4. 개념 분석 (키워드)</h4>
             <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
             <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
             <div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div>
             <hr>
+            
             <div style="display:flex; gap: 10px;">
                 <button class="button light-button" onclick="showManagementView(false)">취소</button>
                 <button id="save-full-btn" class="button primary-button">저장</button>
@@ -189,16 +163,15 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script>
-
     const firebaseConfig = {
-          apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
+    apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
           authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
           projectId: "my-cbt-app-2cdb9",
           storageBucket: "my-cbt-app-2cdb9.firebasestorage.app",
           messagingSenderId: "1091430877229",
           appId: "1:1091430877229:web:1c4fae4ff852df4e1610a4"
     };
-
+        
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -267,7 +240,7 @@
     function hideAddSubjectForm() { document.getElementById('add-subject-form').classList.add('hidden'); document.getElementById('new-subject-name').value = ''; document.getElementById('add-subject-button').classList.remove('hidden'); }
 
     function startEditSubject(subjectId, currentName) {
-        if (document.querySelector('.subject-name-input')) { loadSubjects(); return; }
+        if (document.querySelector('.subject-name-input')) { cancelEdit(); return; }
         const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
         const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons');
         nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`;
@@ -312,7 +285,7 @@
         }
         
         container.innerHTML = '';
-        container.className = ''; // 클래스 초기화
+        container.className = ''; 
 
         if (allQuestionsForSubject.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">등록된 문제가 없습니다.</p>';
@@ -329,14 +302,13 @@
             });
             container.appendChild(listContainer);
         } else {
-            container.className = 'split-view'; // 2분할 뷰 클래스 추가
+            container.className = 'split-view';
             container.innerHTML = `<div id="concept-tree-panel"></div><div id="problem-list-panel"><p style="color:#888; text-align:center;">← 왼쪽에서 개념을 선택하세요.</p></div>`;
             const conceptTreeData = buildConceptTreeData(allQuestionsForSubject);
             renderConceptTree(conceptTreeData);
         }
     }
     
-    // ✨ 신규: 개념 트리 데이터 구조 생성 함수
     function buildConceptTreeData(questions) {
         const tree = {};
         questions.forEach(q => {
@@ -353,19 +325,17 @@
         return tree;
     }
 
-    // ✨ 신규: 개념 트리 렌더링 함수
     function renderConceptTree(treeData) {
         const panel = document.getElementById('concept-tree-panel');
         let html = '<ul>';
-
         for (const kw of Object.keys(treeData).sort()) {
-            html += `<li><div class="node" onclick="renderProblemListForConcept('keyword', '${kw}')"><span class="node-icon">▶</span>${kw}</div><ul>`;
+            html += `<li><div class="node" onclick="renderProblemListForConcept(this, 'keyword', '${kw}')"><span class="node-icon">▶</span>${kw}</div><ul>`;
             const tags = treeData[kw].tags;
             for (const tag of Object.keys(tags).sort()) {
-                html += `<li><div class="node" onclick="renderProblemListForConcept('tag', '${tag}')"><span class="node-icon">▶</span>${tag}</div><ul>`;
+                html += `<li><div class="node" onclick="renderProblemListForConcept(this, 'tag', '${tag}')"><span class="node-icon">▶</span>${tag}</div><ul>`;
                 const metatags = tags[tag].metatags;
                 for (const mt of Object.keys(metatags).sort()) {
-                    html += `<li><div class="node" onclick="renderProblemListForConcept('metatag', '${mt}')"><span class="node-icon">▷</span>${mt}</div></li>`;
+                    html += `<li><div class="node" onclick="renderProblemListForConcept(this, 'metatag', '${mt}')"><span class="node-icon">▷</span>${mt}</div></li>`;
                 }
                 html += `</ul></li>`;
             }
@@ -375,32 +345,21 @@
         panel.innerHTML = html;
     }
 
-    // ✨ 신규: 개념 클릭 시 문제 목록 렌더링 함수
-    function renderProblemListForConcept(type, name) {
+    // ✨ 수정: 클릭된 노드를 정확히 선택하도록 'element' 인자 추가
+    function renderProblemListForConcept(element, type, name) {
         const panel = document.getElementById('problem-list-panel');
-        const allNodes = document.querySelectorAll('#concept-tree-panel .node');
-        allNodes.forEach(node => node.classList.remove('selected'));
+        document.querySelectorAll('#concept-tree-panel .node').forEach(node => node.classList.remove('selected'));
+        if (element) element.classList.add('selected');
         
-        // 클릭된 노드에 selected 클래스 추가
-        const clickedNode = Array.from(allNodes).find(node => node.textContent.includes(name));
-        if (clickedNode) clickedNode.classList.add('selected');
-        
-        const filteredQuestions = allQuestionsForSubject.filter(q => {
-            return q[type + 's'] && q[type + 's'].includes(name);
-        });
-
+        const filteredQuestions = allQuestionsForSubject.filter(q => q[type + 's'] && q[type + 's'].includes(name));
         if (filteredQuestions.length === 0) {
             panel.innerHTML = `<p style="color:#888; text-align:center;">'${name}'을(를) 포함하는 문제가 없습니다.</p>`;
             return;
         }
-
         let html = '';
-        filteredQuestions.forEach(q => {
-            html += `<div class="problem-list-item" onclick="showFullEditView('${q.id}')">${q.text}</div>`;
-        });
+        filteredQuestions.forEach(q => { html += `<div class="problem-list-item" onclick="showFullEditView('${q.id}')">${q.text}</div>`; });
         panel.innerHTML = html;
     }
-
 
     function showFullEditView(questionId = null) {
         showView('add-edit-view');
@@ -408,6 +367,12 @@
         const question = isEditing ? allQuestionsForSubject.find(q => q.id === questionId) : {};
         document.getElementById('add-edit-header').textContent = isEditing ? '문제 수정' : '새 문제 추가';
         document.getElementById('editing-question-id').value = questionId || '';
+
+        // 목차 정보 필드 채우기
+        document.getElementById('q-part').value = question.part || '';
+        document.getElementById('q-chapter').value = question.chapter || '';
+        document.getElementById('q-section').value = question.section || '';
+
         document.getElementById('q-text-full').value = question.text || '';
         document.getElementById('q-answer-full').value = question.answer || '';
         document.getElementById('q-explanation-full').value = question.explanation || '';
@@ -434,6 +399,11 @@
 
     async function saveFullUpdate(questionId) {
         const data = {
+            // ✨ 추가: 목차 정보 저장
+            part: document.getElementById('q-part').value.trim(),
+            chapter: document.getElementById('q-chapter').value.trim(),
+            section: document.getElementById('q-section').value.trim(),
+
             text: document.getElementById('q-text-full').value.trim(),
             answer: document.getElementById('q-answer-full').value.trim(),
             explanation: document.getElementById('q-explanation-full').value.trim(),
@@ -447,7 +417,7 @@
             const subjectRef = db.collection('subjects').doc(currentSubjectId);
             if (questionId) { await subjectRef.collection('questions').doc(questionId).update(data); showFeedback("문제가 수정되었습니다.", "success"); } 
             else { await subjectRef.collection('questions').add(data); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 }); }); showFeedback("새 문제가 추가되었습니다.", "success"); }
-            currentManagementViewMode = 'list'; // 저장 후에는 기본 목록 보기로
+            currentManagementViewMode = 'list';
             await showManagementView(true);
         } catch (error) { console.error(error); showFeedback("저장 중 오류가 발생했습니다."); }
     }
