@@ -90,17 +90,17 @@
         #tree-container ul { padding-left: 1em; list-style: none; position: relative; }
         #tree-container ul ul { margin-left: .5em; }
         #tree-container li { position: relative; padding: 4px 0 4px 1.2em; line-height: 1.5; }
-        #tree-container li > .node-content { display: flex; align-items: center; gap: 10px; }
+        #tree-container li > .node-content { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
         #tree-container li > .node-content .node-text { flex-grow: 1; }
         #tree-container li > .node-content .node-actions { display: none; } /* 평소엔 숨김 */
         #tree-container li > .node-content:hover .node-actions { display: flex; gap: 5px; } /* 호버 시 보임 */
-        #tree-container li::before { content: ""; position: absolute; top: 0; left: 0; border-left: 1px solid #ccc; border-bottom: 1px solid #ccc; width: 1em; height: 1em; }
-        #tree-container li::after { content: ""; position: absolute; top: 1em; left: 0; bottom: 0; border-left: 1px solid #ccc; }
+        #tree-container li::before { content: ""; position: absolute; top: 0; left: 0; border-left: 1px solid #ccc; border-bottom: 1px solid #ccc; width: 1em; height: 1.3em; }
+        #tree-container li::after { content: ""; position: absolute; top: 1.3em; left: 0; bottom: 0; border-left: 1px solid #ccc; }
         #tree-container li:last-child::after { display: none; }
-        #tree-container li.expandable { cursor: pointer; }
+        #tree-container li.expandable > .node-content { cursor: pointer; }
         #tree-container li.expandable > .node-content > .node-text { font-weight: bold; }
         #tree-container li.expandable > .node-content > .node-text:hover { color: #0d6efd; }
-        #tree-container li.expandable::before { content: "[+] "; font-family: monospace; border: none; width: auto; height: auto; top: 4px; cursor: default; }
+        #tree-container li.expandable::before { content: "[+] "; font-family: monospace; border: none; width: auto; height: auto; top: 8px; cursor: pointer; }
         #tree-container li.expandable.expanded::before { content: "[-] "; }
         #tree-container li.expandable.expanded > ul { display: block; }
         #tree-container li > ul { display: none; }
@@ -130,10 +130,7 @@
             <div id="goal-view">
                 <h4>🎯 오늘의 학습 목표</h4>
                 <div id="goal-setup-view">
-                    <div class="goal-input-group">
-                        <input type="number" id="goal-input" min="1" value="10">
-                        <button class="button primary-button" onclick="setDailyGoal()">목표 설정</button>
-                    </div>
+                    <div class="goal-input-group"><input type="number" id="goal-input" min="1" value="10"><button class="button primary-button" onclick="setDailyGoal()">목표 설정</button></div>
                 </div>
                 <div id="goal-status-view" class="hidden" style="display: flex; align-items: center; gap: 10px;">
                     <span id="goal-status" style="flex-grow: 1;"></span>
@@ -146,15 +143,17 @@
 
         <div id="management-view" class="hidden">
             <h2 id="management-header"></h2>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="button primary-button" style="margin-top:0;" onclick="showFullEditView()">+ 새 문제 추가</button>
+            <div class="management-controls">
+                <div class="view-toggle-buttons" id="view-toggle-buttons">
+                    </div>
+                <button class="button primary-button" style="margin-top:0; width: auto;" onclick="showFullEditView()">+ 새 문제 추가</button>
+            </div>
+            <div id="question-list-container">
                 </div>
-            <div id="question-list-container" style="border: 1px solid #eee; border-radius: 8px;"></div>
             <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>
         </div>
             
-        <div id="quiz-view" class="hidden">
-            </div>
+        <div id="quiz-view" class="hidden"></div>
 
         <div id="login-view" class="hidden">
             <h2>로그인</h2>
@@ -172,42 +171,22 @@
             <button class="button light-button" onclick="showView('subject-view')">취소</button>
         </div>
         
-        <div id="tree-view" class="hidden">
-            <h2>🌳 지식 트리</h2>
-            <div id="tree-container">지식 트리 로딩 중...</div>
-            <hr>
-            <button class="button light-button" onclick="showManagementView()">↩️ 문제 관리로</button>
-        </div>
-            
         <div id="add-edit-view" class="hidden">
             <h2 id="add-edit-header"></h2>
             <input type="hidden" id="editing-question-id">
-            
             <h4>1. 문제 정보</h4>
-            <div class="form-group">
-                <label for="q-text-full">문제</label>
-                <textarea id="q-text-full" rows="3" placeholder="문제 내용을 입력하세요"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="q-answer-full">정답</label>
-                <input type="text" id="q-answer-full" placeholder="정답을 입력하세요">
-            </div>
-            <div class="form-group">
-                <label for="q-explanation-full">해설 (선택)</label>
-                <textarea id="q-explanation-full" rows="3" placeholder="해설을 입력하세요"></textarea>
-            </div>
+            <div class="form-group"><label for="q-text-full">문제</label><textarea id="q-text-full" rows="3" placeholder="문제 내용을 입력하세요"></textarea></div>
+            <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full" placeholder="정답을 입력하세요"></div>
+            <div class="form-group"><label for="q-explanation-full">해설 (선택)</label><textarea id="q-explanation-full" rows="3" placeholder="해설을 입력하세요"></textarea></div>
             <hr>
-
             <h4>2. 객관식 보기 (선택)</h4>
             <div id="q-options-container"></div>
             <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
             <hr>
-
             <h4>3. 개념 분석 (선택)</h4>
             <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
             <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
             <hr>
-            
             <div style="display:flex; gap: 10px;">
                 <button class="button light-button" onclick="showManagementView()">취소</button>
                 <button id="save-full-btn" class="button primary-button">저장</button>
@@ -280,39 +259,11 @@
     // ==================================
     // ## 학습 목표 관리 함수 ##
     // ==================================
-    function setDailyGoal() {
-        const goalInput = document.getElementById('goal-input');
-        const goal = parseInt(goalInput.value, 10);
-        if (isNaN(goal) || goal <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; }
-        dailyGoal = goal;
-        dailyProgress = 0;
-        document.getElementById('goal-setup-view').classList.add('hidden');
-        document.getElementById('goal-status-view').classList.remove('hidden');
-        updateGoalStatusDisplay();
-    }
-    function resetDailyGoal() {
-        dailyGoal = 0;
-        document.getElementById('goal-status-view').classList.add('hidden');
-        document.getElementById('goal-setup-view').classList.remove('hidden');
-    }
-    function resetDailyProgress() {
-        dailyProgress = 0;
-        updateGoalStatusDisplay();
-        showFeedback('진행도가 0으로 초기화되었습니다.', 'success');
-    }
-    function updateGoalStatusDisplay() {
-        const el = document.getElementById('goal-status');
-        if (el) el.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`;
-    }
-    function updateDailyProgress(attemptedCount) {
-        if (dailyGoal <= 0) return;
-        const progressBefore = dailyProgress;
-        dailyProgress += attemptedCount;
-        updateGoalStatusDisplay();
-        if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) {
-            showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success');
-        }
-    }
+    function setDailyGoal() { const goalInput = document.getElementById('goal-input'); const goal = parseInt(goalInput.value, 10); if (isNaN(goal) || goal <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; } dailyGoal = goal; dailyProgress = 0; document.getElementById('goal-setup-view').classList.add('hidden'); document.getElementById('goal-status-view').classList.remove('hidden'); updateGoalStatusDisplay(); }
+    function resetDailyGoal() { dailyGoal = 0; document.getElementById('goal-status-view').classList.add('hidden'); document.getElementById('goal-setup-view').classList.remove('hidden'); }
+    function resetDailyProgress() { dailyProgress = 0; updateGoalStatusDisplay(); showFeedback('진행도가 0으로 초기화되었습니다.', 'success'); }
+    function updateGoalStatusDisplay() { const el = document.getElementById('goal-status'); if (el) el.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`; }
+    function updateDailyProgress(attemptedCount) { if (dailyGoal <= 0) return; const progressBefore = dailyProgress; dailyProgress += attemptedCount; updateGoalStatusDisplay(); if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) { showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success'); } }
 
     // ==================================
     // ## 과목 관리 함수 ##
@@ -354,31 +305,12 @@
         } catch (error) { console.error("과목 로딩 중 오류:", error); showFeedback('과목을 불러오는 중 오류가 발생했습니다.'); }
     }
     
-    async function addSubject() {
-        const input = document.getElementById('new-subject-name');
-        const subjectName = input.value.trim();
-        if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; }
-        try {
-            await db.collection('subjects').add({ name: subjectName, questionCount: 0 });
-            showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success');
-            hideAddSubjectForm();
-            await loadSubjects();
-        } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); }
-    }
-
-    function showAddSubjectForm() {
-        document.getElementById('add-subject-form').classList.remove('hidden');
-        document.getElementById('add-subject-button').classList.add('hidden');
-    }
-
-    function hideAddSubjectForm() {
-        document.getElementById('add-subject-form').classList.add('hidden');
-        document.getElementById('new-subject-name').value = '';
-        document.getElementById('add-subject-button').classList.remove('hidden');
-    }
+    async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
+    function showAddSubjectForm() { document.getElementById('add-subject-form').classList.remove('hidden'); document.getElementById('add-subject-button').classList.add('hidden'); }
+    function hideAddSubjectForm() { document.getElementById('add-subject-form').classList.add('hidden'); document.getElementById('new-subject-name').value = ''; document.getElementById('add-subject-button').classList.remove('hidden'); }
 
     function startEditSubject(subjectId, currentName) {
-        cancelEdit(); // 다른 수정중인 항목이 있다면 원래대로 되돌림
+        cancelEdit();
         const nameContainer = document.getElementById(`subject-name-container-${subjectId}`);
         const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons');
         nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`;
@@ -386,48 +318,10 @@
         document.getElementById(`edit-subject-input-${subjectId}`).focus();
     }
 
-    async function saveSubjectUpdate(subjectId) {
-        const input = document.getElementById(`edit-subject-input-${subjectId}`);
-        const newName = input.value.trim();
-        if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; }
-        try {
-            await db.collection('subjects').doc(subjectId).update({ name: newName });
-            showFeedback("과목 이름이 수정되었습니다.", "success");
-        } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); }
-        await loadSubjects();
-    }
-
-    function cancelEdit() {
-        loadSubjects();
-    }
+    async function saveSubjectUpdate(subjectId) { const input = document.getElementById(`edit-subject-input-${subjectId}`); const newName = input.value.trim(); if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; } try { await db.collection('subjects').doc(subjectId).update({ name: newName }); showFeedback("과목 이름이 수정되었습니다.", "success"); } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); } await loadSubjects(); }
+    function cancelEdit() { loadSubjects(); }
     
-    async function deleteSubject(subjectId, subjectName) {
-        const deleteBtn = document.getElementById(`delete-btn-${subjectId}`);
-        if (deleteBtn.innerHTML !== '🗑️ 삭제 확인') {
-            const originalHTML = deleteBtn.innerHTML;
-            deleteBtn.innerHTML = '🗑️ 삭제 확인';
-            deleteBtn.style.color = '#dc3545';
-            setTimeout(() => {
-                const currentBtn = document.getElementById(`delete-btn-${subjectId}`);
-                if (currentBtn && currentBtn.innerHTML.includes('삭제 확인')) {
-                    currentBtn.innerHTML = originalHTML;
-                    currentBtn.style.color = '#6c757d';
-                }
-            }, 4000);
-            return;
-        }
-        showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`);
-        try {
-            const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get();
-            const batch = db.batch();
-            questionsSnapshot.forEach(doc => batch.delete(doc.ref));
-            const subjectRef = db.collection('subjects').doc(subjectId);
-            batch.delete(subjectRef);
-            await batch.commit();
-            showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success');
-            await loadSubjects();
-        } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); }
-    }
+    async function deleteSubject(subjectId, subjectName) { if (!confirm(`'${subjectName}' 과목과 모든 문제를 삭제합니다. 계속하시겠습니까?`)) return; showFeedback(`'${subjectName}' 과목을 삭제하고 있습니다...`); try { const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get(); const batch = db.batch(); questionsSnapshot.forEach(doc => batch.delete(doc.ref)); const subjectRef = db.collection('subjects').doc(subjectId); batch.delete(subjectRef); await batch.commit(); showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success'); await loadSubjects(); } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); } }
 
     // ==================================
     // ## 문제 관리(Management View) 함수 ##
@@ -495,7 +389,7 @@
 
             let treeHTML = '<div id="tree-container"><ul>';
             Object.keys(parts).sort().forEach(partName => {
-                treeHTML += `<li class="expandable expanded"><div class="node-content"><span class="node-text">${partName}</span></div><ul>`;
+                treeHTML += `<li class="expandable expanded"><div class="node-content" onclick="toggleTreeNode(this)"><span class="node-text">${partName}</span></div><ul>`;
                 parts[partName].forEach(q => {
                     treeHTML += `
                         <li>
@@ -512,15 +406,14 @@
             });
             treeHTML += '</ul></div>';
             container.innerHTML = treeHTML;
-
-            container.querySelector('#tree-container').addEventListener('click', function(e) {
-                if (e.target.classList.contains('node-text')) {
-                    const targetLi = e.target.closest('.expandable');
-                    if (targetLi) {
-                        targetLi.classList.toggle('expanded');
-                    }
-                }
-            });
+        }
+    }
+    
+    // ✨ 추가: 트리 노드 클릭 이벤트를 처리할 별도 함수
+    function toggleTreeNode(element) {
+        const targetLi = element.closest('.expandable');
+        if (targetLi) {
+            targetLi.classList.toggle('expanded');
         }
     }
 
@@ -574,10 +467,7 @@
                 showFeedback("문제가 수정되었습니다.", "success");
             } else {
                 await subjectRef.collection('questions').add(data);
-                await db.runTransaction(async t => {
-                    const doc = await t.get(subjectRef);
-                    t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 });
-                });
+                await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: (doc.data().questionCount || 0) + 1 }); });
                 showFeedback("새 문제가 추가되었습니다.", "success");
             }
             await showManagementView(true);
@@ -586,14 +476,10 @@
     
     async function deleteProblem(questionId) {
         if (!confirm("정말로 이 문제를 삭제하시겠습니까?")) return;
-        
         try {
             const subjectRef = db.collection('subjects').doc(currentSubjectId);
             await subjectRef.collection('questions').doc(questionId).delete();
-            await db.runTransaction(async t => {
-                const doc = await t.get(subjectRef);
-                t.update(subjectRef, { questionCount: Math.max(0, (doc.data().questionCount || 1) - 1) });
-            });
+            await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: Math.max(0, (doc.data().questionCount || 1) - 1) }); });
             showFeedback("문제가 삭제되었습니다.", "success");
             await showManagementView(true);
         } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); }
@@ -602,73 +488,10 @@
     // ==================================
     // ## 퀴즈 실행 함수 ##
     // ==================================
-    async function startQuiz(id) {
-        const doc = await db.collection('subjects').doc(id).get();
-        if (!doc.exists) return;
-        currentSubjectId = id;
-        currentSubjectData = doc.data();
-        const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get();
-        if (snapshot.empty) {
-            showFeedback('퀴즈를 시작하려면 최소 1개 이상의 문제가 필요합니다.');
-            return;
-        }
-        quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
-        currentQuizIndex = 0;
-        quizScore = 0;
-        quizProblemsAttempted = 0;
-        showView('quiz-view');
-        displayCurrentQuiz();
-    }
-
-    async function exitQuiz() {
-        if (quizProblemsAttempted > 0) {
-            updateDailyProgress(quizProblemsAttempted);
-        }
-        await loadSubjects();
-        showView('subject-view');
-    }
-
-    function displayCurrentQuiz() {
-        const quizView = document.getElementById('quiz-view');
-        if (!quizView) return;
-        if (currentQuizIndex >= quizQuestions.length) {
-            quizView.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div><button class="button primary-button" onclick="exitQuiz()">과목 선택으로 돌아가기</button>`;
-            if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); }
-            return;
-        }
-        const data = quizQuestions[currentQuizIndex];
-        let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join('');
-        quizView.innerHTML = `<div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;">${currentQuizIndex + 1} / ${quizQuestions.length}</div><div id="quiz-body"><h4>${data.text}</h4><div>${optionsHTML}</div></div><div id="immediate-feedback" style="margin-top: 15px;"><button id="submit-btn" class="button primary-button">정답 확인</button></div><hr style="margin:20px 0;"><button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>`;
-        quizView.querySelectorAll('.option').forEach(li => {
-            li.onclick = (e) => {
-                const selected = quizView.querySelector('.option.selected');
-                if (selected) selected.classList.remove('selected');
-                e.currentTarget.classList.add('selected');
-                selectedOption = e.currentTarget.textContent;
-            }
-        });
-        quizView.querySelector('#submit-btn').onclick = submitAnswer;
-    }
-
-    function submitAnswer() {
-        const selectedOptElem = document.querySelector('.option.selected');
-        if (!selectedOptElem) { showFeedback("보기를 선택해주세요."); return; }
-        quizProblemsAttempted++;
-        const data = quizQuestions[currentQuizIndex];
-        const isCorrect = selectedOption === data.answer;
-        const feedbackDiv = document.getElementById('immediate-feedback');
-        let feedbackHTML = '';
-        if (isCorrect) {
-            quizScore++;
-            feedbackHTML = `<div class="feedback correct"><p><strong>정답입니다!</strong></p></div>`;
-        } else {
-            feedbackHTML = `<div class="feedback incorrect"><p><strong>오답입니다.</strong> 정답: ${data.answer}</p></div>`;
-        }
-        if (data.explanation) {
-            feedbackHTML += `<p style="margin-top:10px;"><strong>해설:</strong> ${data.explanation}</p>`;
-        }
-        feedbackHTML += `<button id="next-btn" class="button primary-button" style="margin-top: 10px;">다음 문제 →</button>`;
-        feedbackDiv.innerHTML = feedbackHTML;
-        feedbackDiv.querySelector('#next-btn').onclick = () => { currentQuizIndex++; displayCurrentQuiz(); };
-    }
+    async function startQuiz(id) { const doc = await db.collection('subjects').doc(id).get(); if (!doc.exists) return; currentSubjectId = id; currentSubjectData = doc.data(); const snapshot = await db.collection('subjects').doc(currentSubjectId).collection('questions').get(); if (snapshot.empty) { showFeedback('퀴즈를 시작하려면 최소 1개 이상의 문제가 필요합니다.'); return; } quizQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random()); currentQuizIndex = 0; quizScore = 0; quizProblemsAttempted = 0; showView('quiz-view'); displayCurrentQuiz(); }
+    async function exitQuiz() { if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); } await loadSubjects(); showView('subject-view'); }
+    function displayCurrentQuiz() { const quizView = document.getElementById('quiz-view'); if (!quizView) return; if (currentQuizIndex >= quizQuestions.length) { quizView.innerHTML = `<div class="final-result"><h2>🎉 퀴즈가 끝났습니다!</h2><p>총 ${quizQuestions.length}문제 중 <strong>${quizScore}개</strong>를 맞히셨습니다.</p></div><button class="button primary-button" onclick="exitQuiz()">과목 선택으로 돌아가기</button>`; if (quizProblemsAttempted > 0) { updateDailyProgress(quizProblemsAttempted); } return; } const data = quizQuestions[currentQuizIndex]; let optionsHTML = (data.options || []).map(opt => `<div class="option">${opt}</div>`).join(''); quizView.innerHTML = `<div id="quiz-header" style="font-size: 1.5em; font-weight: bold; margin-bottom: 15px;">${currentQuizIndex + 1} / ${quizQuestions.length}</div><div id="quiz-body"><h4>${data.text}</h4><div>${optionsHTML}</div></div><div id="immediate-feedback" style="margin-top: 15px;"><button id="submit-btn" class="button primary-button">정답 확인</button></div><hr style="margin:20px 0;"><button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>`; quizView.querySelectorAll('.option').forEach(li => { li.onclick = (e) => { const selected = quizView.querySelector('.option.selected'); if (selected) selected.classList.remove('selected'); e.currentTarget.classList.add('selected'); selectedOption = e.currentTarget.textContent; } }); quizView.querySelector('#submit-btn').onclick = submitAnswer; }
+    function submitAnswer() { const selectedOptElem = document.querySelector('.option.selected'); if (!selectedOptElem) { showFeedback("보기를 선택해주세요."); return; } quizProblemsAttempted++; const data = quizQuestions[currentQuizIndex]; const isCorrect = selectedOption === data.answer; const feedbackDiv = document.getElementById('immediate-feedback'); let feedbackHTML = ''; if (isCorrect) { quizScore++; feedbackHTML = `<div class="feedback correct"><p><strong>정답입니다!</strong></p></div>`; } else { feedbackHTML = `<div class="feedback incorrect"><p><strong>오답입니다.</strong> 정답: ${data.answer}</p></div>`; } if (data.explanation) { feedbackHTML += `<p style="margin-top:10px;"><strong>해설:</strong> ${data.explanation}</p>`; } feedbackHTML += `<button id="next-btn" class="button primary-button" style="margin-top: 10px;">다음 문제 →</button>`; feedbackDiv.innerHTML = feedbackHTML; feedbackDiv.querySelector('#next-btn').onclick = () => { currentQuizIndex++; displayCurrentQuiz(); }; }
 </script>
+</body>
+</html>
