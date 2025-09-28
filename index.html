@@ -28,6 +28,10 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
+        .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
+        .dynamic-field-group input { flex-grow: 1; padding: 10px; font-size: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        .remove-btn { padding: 5px 10px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
         /* 과목 선택 화면 레이아웃 */
         .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; }
@@ -41,9 +45,11 @@
         
         /* 문제 관리 화면 & 2분할 레이아웃 */
         .management-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+        .learning-mode-selector { display: flex; }
         .learning-mode-selector .button { margin-top:0; border-radius: 0; }
         .learning-mode-selector .button:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
         .learning-mode-selector .button:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+        .learning-mode-selector .button + .button { border-left-width: 0; }
         #question-list-container.split-view { display: flex; gap: 20px; }
         #tree-panel { flex: 1; min-width: 250px; border: 1px solid #eee; border-radius: 8px; padding: 10px; height: 500px; overflow-y: auto; }
         #problem-list-panel { flex: 2; border: 1px solid #eee; border-radius: 8px; height: 500px; overflow-y: auto; }
@@ -84,65 +90,12 @@
     <div class="container">
         <div id="feedback-bar" class="hidden"></div>
         <div id="auth-container"></div>
-
-        <div id="subject-view">
-            <h2>과목 선택</h2>
-            <div id="subject-list"></div>
-        </div>
-
-        <div id="management-view" class="hidden">
-            <h2 id="management-header"></h2>
-            <div class="management-controls">
-                <div class="learning-mode-selector" id="learning-mode-selector"></div>
-                <button class="button primary-button" style="margin-top:0; width: auto;" onclick="showFullEditView()">+ 새 문제 추가</button>
-            </div>
-            <div id="question-list-container"></div>
-            <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>
-        </div>
-            
+        <div id="subject-view" class="hidden"></div>
+        <div id="management-view" class="hidden"></div>
         <div id="quiz-view" class="hidden"></div>
-        
-        <div id="login-view" class="hidden">
-            <h2>로그인</h2>
-            <div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div>
-            <div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div>
-            <button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-        <div id="signup-view" class="hidden">
-            <h2>회원가입</h2>
-            <div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div>
-            <div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div>
-            <button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button>
-        </div>
-        
-        <div id="add-edit-view" class="hidden">
-            <h2 id="add-edit-header"></h2>
-            <input type="hidden" id="editing-question-id">
-            <h4>1. 문제 정보 (필수)</h4>
-            <div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div>
-            <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></textarea></div>
-            <div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div>
-            <hr>
-            <h4>2. 목차 정보 (이론 학습용)</h4>
-            <div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div>
-            <div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div>
-            <div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div>
-            <hr>
-            <h4>3. 기출 정보 (실전 학습용)</h4>
-            <div class="form-group"><label for="q-examYear">연도</label><input type="text" id="q-examYear" placeholder="예: 2024"></div>
-            <div class="form-group"><label for="q-examRound">회차</label><input type="text" id="q-examRound" placeholder="예: 1회"></div>
-            <div class="form-group"><label for="q-examNumber">문제 번호</label><input type="text" id="q-examNumber" placeholder="예: 45번"></div>
-            <hr>
-            <h4>4. 객관식 보기 (선택)</h4>
-            <div id="q-options-container"></div><button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
-            <hr>
-            <h4>5. 개념 분석 (키워드/태그)</h4>
-            <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
-            <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
-            <div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div>
-            <hr>
-            <div style="display:flex; gap: 10px;"><button class="button light-button" onclick="showManagementView(false)">취소</button><button id="save-full-btn" class="button primary-button">저장</button></div>
-        </div>
+        <div id="login-view" class="hidden"></div>
+        <div id="signup-view" class="hidden"></div>
+        <div id="add-edit-view" class="hidden"></div>
     </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -167,6 +120,57 @@
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
     const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view', 'add-edit-view'];
     let currentLearningMode = 'list';
+
+    // ==================================
+    // ## 앱 초기화 및 화면 렌더링 ##
+    // ==================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // 앱의 기본 HTML 구조를 여기에 삽입
+        document.getElementById('auth-container').innerHTML = `
+            <span id="user-email"></span>
+            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
+            <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
+        
+        document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-list"></div>`;
+        
+        document.getElementById('management-view').innerHTML = `
+            <h2 id="management-header"></h2>
+            <div class="management-controls">
+                <div class="learning-mode-selector" id="learning-mode-selector"></div>
+                <button class="button primary-button" style="margin-top:0; width: auto;" onclick="showFullEditView()">+ 새 문제 추가</button>
+            </div>
+            <div id="question-list-container"></div>
+            <button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>`;
+
+        document.getElementById('login-view').innerHTML = `<h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
+        document.getElementById('signup-view').innerHTML = `<h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
+        
+        // ✨ 수정: 객관식 보기 영역을 form-group으로 감싸 UI 통일
+        document.getElementById('add-edit-view').innerHTML = `
+            <h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id">
+            <h4>1. 문제 정보 (필수)</h4>
+            <div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div>
+            <div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div>
+            <div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div><hr>
+            <h4>2. 목차 정보 (이론 학습용)</h4>
+            <div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div>
+            <div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div>
+            <div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div><hr>
+            <h4>3. 기출 정보 (실전 학습용)</h4>
+            <div class="form-group"><label for="q-examYear">연도</label><input type="text" id="q-examYear" placeholder="예: 2024"></div>
+            <div class="form-group"><label for="q-examRound">회차</label><input type="text" id="q-examRound" placeholder="예: 1회"></div>
+            <div class="form-group"><label for="q-examNumber">문제 번호</label><input type="text" id="q-examNumber" placeholder="예: 45번"></div><hr>
+            <h4>4. 객관식 보기 (선택)</h4>
+            <div class="form-group">
+                <div id="q-options-container"></div>
+                <button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button>
+            </div><hr>
+            <h4>5. 개념 분석 (키워드/태그)</h4>
+            <div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div>
+            <div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div>
+            <div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div><hr>
+            <div style="display:flex; gap: 10px;"><button class="button light-button" onclick="showManagementView(false)">취소</button><button id="save-full-btn" class="button primary-button">저장</button></div>`;
+    });
 
     // ==================================
     // ## 핵심 유틸리티 함수 ##
@@ -247,28 +251,27 @@
         } else {
             container.className = 'split-view';
             container.innerHTML = `<div id="tree-panel"></div><div id="problem-list-panel"><p style="color:#888; text-align:center;">← 왼쪽에서 항목을 선택하세요.</p></div>`;
-            let treeData; let levels;
+            let levels;
             if (currentLearningMode === 'topic') { levels = ['part', 'chapter', 'section']; }
             else if (currentLearningMode === 'exam') { levels = ['examYear', 'examRound', 'examNumber']; }
             else if (currentLearningMode === 'keyword') { levels = ['keywords', 'tags', 'metatags']; }
-            treeData = buildTreeData(allQuestionsForSubject, levels);
+            const treeData = buildTreeData(allQuestionsForSubject, levels);
             renderTree(treeData, levels);
         }
     }
-    // 문제 목록 렌더링 함수 분리 및 재사용
     function renderProblemList(container, questions) {
         container.innerHTML = '';
         const listContainer = document.createElement('div');
         if (container.id === 'question-list-container') { listContainer.style.border = '1px solid #eee'; listContainer.style.borderRadius = '8px'; }
-        questions.sort((a,b) => a.text.localeCompare(b.text)).forEach(q => {
+        questions.sort((a,b) => (a.text || '').localeCompare(b.text || '')).forEach(q => {
             const item = document.createElement('div'); item.className = 'question-item';
             item.innerHTML = `<div class="question-item-text" onclick="showFullEditView('${q.id}')">${q.text}</div><div class="question-item-actions"><button class="button light-button small-button" onclick="showFullEditView('${q.id}')">수정</button><button class="button light-button small-button" onclick="deleteProblem('${q.id}')">삭제</button></div>`;
             listContainer.appendChild(item);
         });
         container.appendChild(listContainer);
     }
-    function buildTreeData(questions, levels) { const tree = {}; questions.forEach(q => { let currentLevel = tree; levels.forEach((levelKey) => { const isArray = Array.isArray(q[levelKey]); const values = isArray ? (q[levelKey] || []) : [q[levelKey] || `미지정`]; values.forEach(value => { if (!currentLevel[value]) { currentLevel[value] = { _children: {} }; } currentLevel = currentLevel[value]._children; }); }); }); return tree; }
-    function renderTree(treeData, levels, level = 0, path = []) { const panel = document.getElementById('tree-panel'); if (level === 0) panel.innerHTML = ''; let html = '<ul>'; for (const key of Object.keys(treeData).sort()) { const currentPath = [...path, {key}]; const pathStr = JSON.stringify(currentPath); html += `<li><div class="node" onclick='renderProblemListForNode(this, ${pathStr})'><span class="node-icon">▶</span>${key}</div>`; const children = treeData[key]._children; if (Object.keys(children).length > 0) { html += `<ul class="collapsed">${renderTree(children, levels, level + 1, currentPath)}</ul>`; } html += `</li>`; } html += '</ul>'; if (level === 0) { panel.innerHTML = html; panel.onclick = function(e) { if(e.target.classList.contains('node-icon') || e.target.classList.contains('node')) { const nodeDiv = e.target.closest('.node'); const subList = nodeDiv.nextElementSibling; if(subList && subList.tagName === 'UL') { subList.classList.toggle('collapsed'); nodeDiv.classList.toggle('expanded'); } } }; } return html; }
+    function buildTreeData(questions, levels) { const tree = {}; questions.forEach(q => { let currentLevel = tree; levels.forEach((levelKey) => { const isArray = Array.isArray(q[levelKey]); const values = isArray ? (q[levelKey] || []) : [q[levelKey] || `미지정`]; if (values.length === 0 && isArray) { values.push('미지정'); } values.forEach(value => { if (!currentLevel[value]) { currentLevel[value] = { _children: {} }; } currentLevel = currentLevel[value]._children; }); }); }); return tree; }
+    function renderTree(treeData, levels, level = 0, path = []) { const panel = document.getElementById('tree-panel'); if (level === 0) panel.innerHTML = ''; let html = '<ul>'; for (const key of Object.keys(treeData).sort()) { const currentPath = [...path, {key}]; const pathStr = JSON.stringify(currentPath).replace(/'/g, "&apos;"); html += `<li><div class="node" onclick='renderProblemListForNode(this, ${pathStr})'><span class="node-icon">▶</span>${key}</div>`; const children = treeData[key]._children; if (Object.keys(children).length > 0) { html += `<ul class="collapsed">${renderTree(children, levels, level + 1, currentPath)}</ul>`; } html += `</li>`; } html += '</ul>'; if (level === 0) { panel.innerHTML = html; panel.onclick = function(e) { if(e.target.classList.contains('node-icon') || e.target.classList.contains('node')) { const nodeDiv = e.target.closest('.node'); const subList = nodeDiv.nextElementSibling; if(subList && subList.tagName === 'UL') { subList.classList.toggle('collapsed'); nodeDiv.classList.toggle('expanded'); } } }; } return html; }
     function renderProblemListForNode(element, path) {
         document.querySelectorAll('#tree-panel .node').forEach(node => node.classList.remove('selected'));
         if (element) element.classList.add('selected');
@@ -277,8 +280,6 @@
         const filteredQuestions = allQuestionsForSubject.filter(q => { return path.every((p, i) => { const levelKey = levels[i]; const value = q[levelKey]; return Array.isArray(value) ? (value || []).includes(p.key) : (value || '미지정') === p.key; }); });
         renderProblemList(panel, filteredQuestions);
     }
-    
-    // '투트랙' 데이터 처리를 위한 함수 업데이트
     function showFullEditView(questionId = null) {
         showView('add-edit-view');
         const isEditing = !!questionId;
