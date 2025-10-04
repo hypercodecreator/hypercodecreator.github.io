@@ -85,21 +85,23 @@
         #tree-panel .node.expanded > .node-icon { transform: rotate(90deg); }
         #tree-panel ul.collapsed { display: none; }
 
-        /* ✨ 신규: 과목 트리 레이아웃 */
-        #subject-list ul { list-style: none; padding-left: 20px; }
-        .subject-node { padding: 10px; border-radius: 6px; }
-        .subject-node:hover { background-color: #f8f9fa; }
-        .node-header { display: flex; align-items: center; cursor: pointer; }
+        /* 과목 트리 레이아웃 */
+        #subject-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        #subject-list ul { list-style: none; padding-left: 20px; margin: 0; }
+        .subject-node { padding: 5px; border-radius: 6px; }
+        .node-header { display: flex; align-items: center; cursor: pointer; padding: 5px; border-radius: 4px;}
+        .node-header:hover { background-color: #f0f2f5; }
         .node-icon { margin-right: 8px; transition: transform 0.2s; display: inline-block; width: 1em; }
         .node-header.expanded > .node-icon { transform: rotate(90deg); }
         .node-name { font-weight: bold; flex-grow: 1; }
-        .subject-item { display: flex; justify-content: space-between; align-items: center; padding-left: 28px; /* 아이콘 너비만큼 들여쓰기 */ }
+        .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 10px 10px 28px; /* 아이콘 너비만큼 들여쓰기 */ }
+        .subject-item:hover { background-color: #f8f9fa; border-radius: 4px;}
         .subject-item-name-container { flex-grow: 1; margin-right: 15px; }
         .subject-item-name { font-size: 1rem; }
         .subject-item-buttons { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
         .subject-item-buttons .button { width: auto; margin: 0; padding: 8px 12px; font-size: 0.9em; }
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
-        .edit-btn:hover, .delete-btn:hover { background-color: #f0f2f5; color: #212529; }
+        .edit-btn:hover, .delete-btn:hover { background-color: #e9ecef; }
 
         /* 기타 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
@@ -111,7 +113,11 @@
         <div id="auth-container"></div>
         <div id="subject-view" class="hidden">
             <h2>과목 선택</h2>
-            <div id="subject-list"></div>
+            <div id="subject-controls">
+                <button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button>
+                <button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button>
+            </div>
+            <div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div>
             <button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>
         </div>
         <div id="management-view" class="hidden"></div>
@@ -140,11 +146,11 @@
     const auth = firebase.auth();
 
     // 전역 변수
-    let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
-    let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
     let allSubjects = [];
     const views = ['subject-view', 'management-view', 'quiz-view', 'login-view', 'signup-view', 'add-edit-view'];
     let currentLearningMode = 'list';
+    let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
+    let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
 
     // ==================================
     // ## 앱 초기화 및 화면 렌더링 ##
@@ -225,7 +231,7 @@
         const listDiv = document.getElementById('subject-list');
         listDiv.innerHTML = '과목 로딩 중...';
         try {
-            const snapshot = await db.collection('subjects').orderBy('name').get();
+            const snapshot = await db.collection('subjects').get();
             allSubjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderSubjectTree();
         } catch (error) { console.error("과목 로딩 중 오류:", error); }
@@ -257,32 +263,32 @@
         const container = document.getElementById('subject-list');
         let html = '<ul>';
 
-        for (const discipline of Object.keys(treeData).sort()) {
+        const sortedDisciplines = Object.keys(treeData).sort();
+        for (const discipline of sortedDisciplines) {
             html += `
                 <li class="subject-node">
-                    <div class="node-header" onclick="toggleNode(this)">
+                    <div class="node-header expanded" onclick="toggleNode(this)">
                         <span class="node-icon">▶</span>
                         <span class="node-name">${discipline}</span>
                     </div>
-                    <ul class="hidden">`;
+                    <ul>`; // hidden 클래스 제거
             
-            // 학기가 있는 과목들
-            for (const semester of Object.keys(treeData[discipline].semesters).sort()) {
+            const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
+            for (const semester of sortedSemesters) {
                 html += `
                     <li>
-                        <div class="node-header" onclick="toggleNode(this)">
+                        <div class="node-header expanded" onclick="toggleNode(this)">
                             <span class="node-icon">▶</span>
                             <span class="node-name">${semester}</span>
                         </div>
-                        <ul class="hidden">`;
-                treeData[discipline].semesters[semester].forEach(subject => {
+                        <ul>`; // hidden 클래스 제거
+                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
                     html += `<li>${getSubjectItemHTML(subject)}</li>`;
                 });
                 html += `</ul></li>`;
             }
 
-            // 학기가 없는 과목들
-            treeData[discipline].noSemester.forEach(subject => {
+            treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
                 html += `<li>${getSubjectItemHTML(subject)}</li>`;
             });
 
@@ -315,6 +321,17 @@
         }
     }
 
+    function expandAllNodes() {
+        document.querySelectorAll('#subject-list ul').forEach(ul => ul.classList.remove('hidden'));
+        document.querySelectorAll('#subject-list .node-header').forEach(header => header.classList.add('expanded'));
+    }
+    
+    function collapseAllNodes() {
+        // 최상위 ul은 제외하고 모두 접기
+        document.querySelectorAll('#subject-list > ul > li > ul').forEach(ul => ul.classList.add('hidden'));
+        document.querySelectorAll('#subject-list .node-header').forEach(header => header.classList.remove('expanded'));
+    }
+    
     function showSubjectForm(subjectId = null) {
         const isEditing = !!subjectId;
         const subject = isEditing ? allSubjects.find(s => s.id === subjectId) : {};
