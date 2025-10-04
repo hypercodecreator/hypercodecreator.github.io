@@ -84,19 +84,43 @@
         #tree-panel .node-icon { margin-right: 5px; display: inline-block; width: 1em; transition: transform 0.2s; }
         #tree-panel .node.expanded > .node-icon { transform: rotate(90deg); }
         #tree-panel ul.collapsed { display: none; }
+
+        /* ✨ 신규: 과목 트리 레이아웃 */
+        #subject-list ul { list-style: none; padding-left: 20px; }
+        .subject-node { padding: 10px; border-radius: 6px; }
+        .subject-node:hover { background-color: #f8f9fa; }
+        .node-header { display: flex; align-items: center; cursor: pointer; }
+        .node-icon { margin-right: 8px; transition: transform 0.2s; display: inline-block; width: 1em; }
+        .node-header.expanded > .node-icon { transform: rotate(90deg); }
+        .node-name { font-weight: bold; flex-grow: 1; }
+        .subject-item { display: flex; justify-content: space-between; align-items: center; padding-left: 28px; /* 아이콘 너비만큼 들여쓰기 */ }
+        .subject-item-name-container { flex-grow: 1; margin-right: 15px; }
+        .subject-item-name { font-size: 1rem; }
+        .subject-item-buttons { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+        .subject-item-buttons .button { width: auto; margin: 0; padding: 8px 12px; font-size: 0.9em; }
+        .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
+        .edit-btn:hover, .delete-btn:hover { background-color: #f0f2f5; color: #212529; }
+
+        /* 기타 */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
      </style>
 </head>
 <body>
     <div class="container">
-        <div id="feedback-bar" class="hidden"></div>
         <div id="auth-container"></div>
-        <div id="subject-view" class="hidden"></div>
+        <div id="subject-view" class="hidden">
+            <h2>과목 선택</h2>
+            <div id="subject-list"></div>
+            <button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>
+        </div>
         <div id="management-view" class="hidden"></div>
         <div id="quiz-view" class="hidden"></div>
         <div id="login-view" class="hidden"></div>
         <div id="signup-view" class="hidden"></div>
         <div id="add-edit-view" class="hidden"></div>
     </div>
+    <div id="modal-container"></div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -118,7 +142,8 @@
     // 전역 변수
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
-    const views = ['subject-view', 'quiz-view', 'management-view', 'login-view', 'signup-view', 'add-edit-view'];
+    let allSubjects = [];
+    const views = ['subject-view', 'management-view', 'quiz-view', 'login-view', 'signup-view', 'add-edit-view'];
     let currentLearningMode = 'list';
 
     // ==================================
@@ -198,27 +223,162 @@
     // ==================================
     async function loadSubjects() {
         const listDiv = document.getElementById('subject-list');
-        listDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">과목 로딩 중...</div>';
+        listDiv.innerHTML = '과목 로딩 중...';
         try {
             const snapshot = await db.collection('subjects').orderBy('name').get();
-            listDiv.innerHTML = '';
-            snapshot.docs.forEach(doc => {
-                const subject = doc.data(); const subjectId = doc.id; const subjectName = subject.name;
-                const item = document.createElement('div'); item.className = 'subject-item';
-                item.innerHTML = `
-                    <div class="subject-item-name-container" id="subject-name-container-${subjectId}">
-                        <span class="subject-item-name">${subjectName} (${subject.questionCount || 0}문제)</span>
+            allSubjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderSubjectTree();
+        } catch (error) { console.error("과목 로딩 중 오류:", error); }
+    }
+
+    function buildSubjectTreeData() {
+        const tree = {};
+        allSubjects.forEach(subject => {
+            const discipline = subject.discipline || '미지정 학문';
+            const semester = subject.semester || null;
+
+            if (!tree[discipline]) {
+                tree[discipline] = { semesters: {}, noSemester: [] };
+            }
+            if (semester) {
+                if (!tree[discipline].semesters[semester]) {
+                    tree[discipline].semesters[semester] = [];
+                }
+                tree[discipline].semesters[semester].push(subject);
+            } else {
+                tree[discipline].noSemester.push(subject);
+            }
+        });
+        return tree;
+    }
+
+    function renderSubjectTree() {
+        const treeData = buildSubjectTreeData();
+        const container = document.getElementById('subject-list');
+        let html = '<ul>';
+
+        for (const discipline of Object.keys(treeData).sort()) {
+            html += `
+                <li class="subject-node">
+                    <div class="node-header" onclick="toggleNode(this)">
+                        <span class="node-icon">▶</span>
+                        <span class="node-name">${discipline}</span>
                     </div>
-                    <div class="subject-item-buttons">
-                        <button class="button primary-button" onclick="startQuiz('${subjectId}')">퀴즈 시작</button>
-                        <button class="button secondary-button" onclick="manageSubject('${subjectId}')">문제 관리</button>
-                        <button class="edit-btn" onclick="startEditSubject('${subjectId}', '${subjectName}')">✏️</button>
-                        <button class="delete-btn" onclick="deleteSubject('${subjectId}', '${subjectName}')">🗑️</button>
-                    </div>`;
-                listDiv.appendChild(item);
+                    <ul class="hidden">`;
+            
+            // 학기가 있는 과목들
+            for (const semester of Object.keys(treeData[discipline].semesters).sort()) {
+                html += `
+                    <li>
+                        <div class="node-header" onclick="toggleNode(this)">
+                            <span class="node-icon">▶</span>
+                            <span class="node-name">${semester}</span>
+                        </div>
+                        <ul class="hidden">`;
+                treeData[discipline].semesters[semester].forEach(subject => {
+                    html += `<li>${getSubjectItemHTML(subject)}</li>`;
+                });
+                html += `</ul></li>`;
+            }
+
+            // 학기가 없는 과목들
+            treeData[discipline].noSemester.forEach(subject => {
+                html += `<li>${getSubjectItemHTML(subject)}</li>`;
             });
-            listDiv.insertAdjacentHTML('beforeend', `<button id="add-subject-button" class="button primary-button" onclick="showAddSubjectForm()">+ 새 과목 추가</button>`);
-        } catch (error) { console.error("과목 로딩 중 오류:", error); showFeedback('과목을 불러오는 중 오류가 발생했습니다.'); }
+
+            html += `</ul></li>`;
+        }
+        html += `</ul>`;
+        container.innerHTML = html;
+    }
+    
+    function getSubjectItemHTML(subject) {
+        return `
+            <div class="subject-item">
+                <div class="subject-item-name-container">
+                    <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
+                </div>
+                <div class="subject-item-buttons">
+                    <button class="button primary-button" onclick="startQuiz('${subject.id}')">퀴즈 시작</button>
+                    <button class="button secondary-button" onclick="manageSubject('${subject.id}')">문제 관리</button>
+                    <button class="edit-btn" onclick="showSubjectForm('${subject.id}')">✏️</button>
+                    <button class="delete-btn" onclick="deleteSubject('${subject.id}', '${subject.name}')">🗑️</button>
+                </div>
+            </div>`;
+    }
+
+    function toggleNode(element) {
+        element.classList.toggle('expanded');
+        const subList = element.nextElementSibling;
+        if (subList && subList.tagName === 'UL') {
+            subList.classList.toggle('hidden');
+        }
+    }
+
+    function showSubjectForm(subjectId = null) {
+        const isEditing = !!subjectId;
+        const subject = isEditing ? allSubjects.find(s => s.id === subjectId) : {};
+        const modalContainer = document.getElementById('modal-container');
+        
+        modalContainer.innerHTML = `
+            <div class="modal-backdrop" onclick="closeModal()"></div>
+            <div class="modal">
+                <h3>${isEditing ? '과목 수정' : '새 과목 추가'}</h3>
+                <div class="form-group">
+                    <label for="subject-discipline">학문 (예: 응급구조사, 자격증)</label>
+                    <input type="text" id="subject-discipline" value="${subject.discipline || ''}" list="disciplines-list">
+                    <datalist id="disciplines-list">
+                        ${[...new Set(allSubjects.map(s => s.discipline).filter(Boolean))]
+                            .map(d => `<option value="${d}"></option>`).join('')}
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label for="subject-semester">학기 (선택 사항, 예: 1-2, 2-1)</label>
+                    <input type="text" id="subject-semester" value="${subject.semester || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="subject-name">과목명</label>
+                    <input type="text" id="subject-name" value="${subject.name || ''}">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="button light-button" onclick="closeModal()">취소</button>
+                    <button class="button primary-button" onclick="saveSubject('${subjectId || ''}')">저장</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function closeModal() {
+        document.getElementById('modal-container').innerHTML = '';
+    }
+
+    async function saveSubject(subjectId) {
+        const data = {
+            name: document.getElementById('subject-name').value.trim(),
+            discipline: document.getElementById('subject-discipline').value.trim(),
+            semester: document.getElementById('subject-semester').value.trim()
+        };
+
+        if (!data.name || !data.discipline) {
+            showFeedback('학문과 과목명은 필수입니다.');
+            return;
+        }
+
+        try {
+            if (subjectId) { // 수정
+                await db.collection('subjects').doc(subjectId).update(data);
+                showFeedback('과목이 수정되었습니다.', 'success');
+            } else { // 추가
+                data.questionCount = 0;
+                await db.collection('subjects').add(data);
+                showFeedback('새 과목이 추가되었습니다.', 'success');
+            }
+            closeModal();
+            await loadSubjects();
+        } catch (error) {
+            console.error("과목 저장 중 오류:", error);
+            showFeedback('과목 저장 중 오류가 발생했습니다.');
+        }
     }
     
     async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
