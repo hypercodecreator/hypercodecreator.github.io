@@ -27,7 +27,7 @@
         /* 폼 그룹 & 입력창 스타일 통일 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .dynamic-field-group .field-label { font-size: 0.9em; color: #6c757d; min-width: 25px; }
         .dynamic-field-group input { flex-grow: 1; padding: 10px; font-size: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
@@ -87,6 +87,9 @@
 
         /* 과목 트리 레이아웃 */
         #subject-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        #subject-tree-actions { display: flex; gap: 10px; }
+        #subject-search { padding: 8px 12px; font-size: 0.9em; border-radius: 6px; border: 1px solid #ccc; min-width: 200px;}
+
         #subject-list ul { list-style: none; padding-left: 20px; margin: 0; }
         .subject-node { padding: 5px; border-radius: 6px; }
         .node-header { display: flex; align-items: center; cursor: pointer; padding: 5px; border-radius: 4px;}
@@ -94,7 +97,7 @@
         .node-icon { margin-right: 8px; transition: transform 0.2s; display: inline-block; width: 1em; }
         .node-header.expanded > .node-icon { transform: rotate(90deg); }
         .node-name { font-weight: bold; flex-grow: 1; }
-        .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 10px 10px 28px; /* 아이콘 너비만큼 들여쓰기 */ }
+        .subject-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 10px 10px 28px; }
         .subject-item:hover { background-color: #f8f9fa; border-radius: 4px;}
         .subject-item-name-container { flex-grow: 1; margin-right: 15px; }
         .subject-item-name { font-size: 1rem; }
@@ -103,7 +106,7 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
         .edit-btn:hover, .delete-btn:hover { background-color: #e9ecef; }
 
-        /* 기타 */
+        /* 모달 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
      </style>
@@ -111,7 +114,7 @@
 <body>
     <div class="container">
         <div id="auth-container"></div>
-        <div id="subject-view" class="hidden">
+        <div id="subject-view" class="hidden"></div>
             <h2>과목 선택</h2>
             <div id="subject-controls">
                 <button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button>
@@ -157,20 +160,22 @@
     // ==================================
     document.addEventListener('DOMContentLoaded', () => {
         // 앱의 기본 HTML 구조를 여기에 삽입
-        document.getElementById('auth-container').innerHTML = `
-            <span id="user-email"></span>
-            <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
-            <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
+       document.addEventListener('DOMContentLoaded', () => {
+        // 앱의 기본 HTML 구조를 여기에 삽입
+        document.getElementById('auth-container').innerHTML = `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div><div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
         
         document.getElementById('subject-view').innerHTML = `
             <h2>과목 선택</h2>
             <div id="subject-controls">
-                <button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button>
-                <button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button>
+                <div id="subject-tree-actions">
+                    <button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button>
+                    <button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button>
+                </div>
+                <input type="search" id="subject-search" placeholder="학문/학기/과목명 검색..." onkeyup="filterSubjectTree()">
             </div>
             <div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div>
             <button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
-        
+
         document.getElementById('management-view').innerHTML = `
             <h2 id="management-header"></h2>
             <div class="management-controls">
@@ -239,23 +244,82 @@
         try {
             const snapshot = await db.collection('subjects').get();
             allSubjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderSubjectTree();
+            renderSubjectTree(); // 필터 없이 전체 렌더링
         } catch (error) { console.error("과목 로딩 중 오류:", error); }
     }
 
-    function buildSubjectTreeData() {
+    // ✨ 신규: 검색창 입력에 따라 트리 필터링
+    function filterSubjectTree() {
+        const filterText = document.getElementById('subject-search').value;
+        renderSubjectTree(filterText);
+    }
+    
+    // ✨ 수정: 필터링 로직 추가
+    function renderSubjectTree(filterText = '') {
+        const lowerCaseFilter = filterText.toLowerCase();
+        
+        // 필터링된 과목 목록 생성
+        const filteredSubjects = lowerCaseFilter 
+            ? allSubjects.filter(s => 
+                (s.discipline && s.discipline.toLowerCase().includes(lowerCaseFilter)) ||
+                (s.semester && s.semester.toLowerCase().includes(lowerCaseFilter)) ||
+                (s.name && s.name.toLowerCase().includes(lowerCaseFilter))
+              )
+            : allSubjects;
+
+        const treeData = buildSubjectTreeData(filteredSubjects);
+        const container = document.getElementById('subject-list');
+        let html = '<ul>';
+
+        const sortedDisciplines = Object.keys(treeData).sort();
+        if (sortedDisciplines.length === 0 && filterText) {
+            container.innerHTML = `<p style="text-align:center; color:#888;">'${filterText}'에 대한 검색 결과가 없습니다.</p>`;
+            return;
+        }
+
+        for (const discipline of sortedDisciplines) {
+            // 필터링 시에는 항상 펼침
+            const isExpanded = filterText ? 'expanded' : ''; 
+            const isHidden = filterText ? '' : 'hidden';
+
+            html += `
+                <li class="subject-node">
+                    <div class="node-header ${isExpanded}" onclick="toggleNode(this)">
+                        <span class="node-icon">▶</span><span class="node-name">${discipline}</span>
+                    </div>
+                    <ul class="${isHidden}">`;
+            
+            const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
+            for (const semester of sortedSemesters) {
+                html += `
+                    <li>
+                        <div class="node-header ${isExpanded}" onclick="toggleNode(this)">
+                            <span class="node-icon">▶</span><span class="node-name">${semester}</span>
+                        </div>
+                        <ul class="${isHidden}">`;
+                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
+                    html += `<li>${getSubjectItemHTML(subject)}</li>`;
+                });
+                html += `</ul></li>`;
+            }
+            treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
+                html += `<li>${getSubjectItemHTML(subject)}</li>`;
+            });
+            html += `</ul></li>`;
+        }
+        html += `</ul>`;
+        container.innerHTML = html;
+        if(filterText) expandAllNodes();
+    }
+
+    function buildSubjectTreeData(subjects) {
         const tree = {};
-        allSubjects.forEach(subject => {
+        subjects.forEach(subject => {
             const discipline = subject.discipline || '미지정 학문';
             const semester = subject.semester || null;
-
-            if (!tree[discipline]) {
-                tree[discipline] = { semesters: {}, noSemester: [] };
-            }
+            if (!tree[discipline]) tree[discipline] = { semesters: {}, noSemester: [] };
             if (semester) {
-                if (!tree[discipline].semesters[semester]) {
-                    tree[discipline].semesters[semester] = [];
-                }
+                if (!tree[discipline].semesters[semester]) tree[discipline].semesters[semester] = [];
                 tree[discipline].semesters[semester].push(subject);
             } else {
                 tree[discipline].noSemester.push(subject);
