@@ -162,7 +162,14 @@
             <div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>
             <div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
         
-        document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-list"></div>`;
+        document.getElementById('subject-view').innerHTML = `
+            <h2>과목 선택</h2>
+            <div id="subject-controls">
+                <button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button>
+                <button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button>
+            </div>
+            <div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div>
+            <button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
         
         document.getElementById('management-view').innerHTML = `
             <h2 id="management-header"></h2>
@@ -176,7 +183,6 @@
         document.getElementById('login-view').innerHTML = `<h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
         document.getElementById('signup-view').innerHTML = `<h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
         
-        // ✨ 수정: 객관식 보기 영역을 form-group으로 감싸 UI 통일
         document.getElementById('add-edit-view').innerHTML = `
             <h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id">
             <h4>1. 문제 정보 (필수)</h4>
