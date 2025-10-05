@@ -160,8 +160,6 @@
     // ==================================
     document.addEventListener('DOMContentLoaded', () => {
         // 앱의 기본 HTML 구조를 여기에 삽입
-       document.addEventListener('DOMContentLoaded', () => {
-        // 앱의 기본 HTML 구조를 여기에 삽입
         document.getElementById('auth-container').innerHTML = `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div><div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
         
         document.getElementById('subject-view').innerHTML = `
@@ -223,18 +221,11 @@
     // ==================================
     // ## 인증 및 앱 시작 함수 ##
     // ==================================
-    auth.onAuthStateChanged(async (user) => { const authContainer = document.getElementById('auth-container'); authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; if (user) { await loadSubjects(); showView('subject-view'); } else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } });
+    auth.onAuthStateChanged(async (user) => { const authContainer = document.getElementById('auth-container'); if(authContainer) { authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; } if (user) { await loadSubjects(); showView('subject-view'); } else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } });
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { showFeedback(e.message); } }
     function logOut() { auth.signOut(); }
     
-    // (학습 목표 관리 함수들은 변경 없음)
-    function setDailyGoal() { const goalInput = document.getElementById('goal-input'); const goal = parseInt(goalInput.value, 10); if (isNaN(goal) || goal <= 0) { showFeedback('1 이상의 숫자를 목표로 설정해주세요.'); return; } dailyGoal = goal; dailyProgress = 0; document.getElementById('goal-setup-view').classList.add('hidden'); document.getElementById('goal-status-view').classList.remove('hidden'); updateGoalStatusDisplay(); }
-    function resetDailyGoal() { dailyGoal = 0; document.getElementById('goal-status-view').classList.add('hidden'); document.getElementById('goal-setup-view').classList.remove('hidden'); }
-    function resetDailyProgress() { dailyProgress = 0; updateGoalStatusDisplay(); showFeedback('진행도가 0으로 초기화되었습니다.', 'success'); }
-    function updateGoalStatusDisplay() { const el = document.getElementById('goal-status'); if (el) el.innerHTML = `오늘의 목표: <span class="progress">${dailyProgress}</span> / <span class="goal">${dailyGoal}</span> 문제`; }
-    function updateDailyProgress(attemptedCount) { if (dailyGoal <= 0) return; const progressBefore = dailyProgress; dailyProgress += attemptedCount; updateGoalStatusDisplay(); if ((dailyProgress >= dailyGoal) && (progressBefore < dailyGoal)) { showFeedback('🎉 오늘의 통합 학습 목표를 달성했습니다! 대단해요!', 'success'); } }
-
     // ==================================
     // ## 과목 관리 함수 ##
     // ==================================
@@ -244,67 +235,37 @@
         try {
             const snapshot = await db.collection('subjects').get();
             allSubjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderSubjectTree(); // 필터 없이 전체 렌더링
+            renderSubjectTree();
         } catch (error) { console.error("과목 로딩 중 오류:", error); }
     }
 
-    // ✨ 신규: 검색창 입력에 따라 트리 필터링
     function filterSubjectTree() {
         const filterText = document.getElementById('subject-search').value;
         renderSubjectTree(filterText);
     }
     
-    // ✨ 수정: 필터링 로직 추가
     function renderSubjectTree(filterText = '') {
         const lowerCaseFilter = filterText.toLowerCase();
-        
-        // 필터링된 과목 목록 생성
-        const filteredSubjects = lowerCaseFilter 
-            ? allSubjects.filter(s => 
-                (s.discipline && s.discipline.toLowerCase().includes(lowerCaseFilter)) ||
-                (s.semester && s.semester.toLowerCase().includes(lowerCaseFilter)) ||
-                (s.name && s.name.toLowerCase().includes(lowerCaseFilter))
-              )
-            : allSubjects;
-
+        const filteredSubjects = lowerCaseFilter ? allSubjects.filter(s => (s.discipline && s.discipline.toLowerCase().includes(lowerCaseFilter)) || (s.semester && s.semester.toLowerCase().includes(lowerCaseFilter)) || (s.name && s.name.toLowerCase().includes(lowerCaseFilter))) : allSubjects;
         const treeData = buildSubjectTreeData(filteredSubjects);
         const container = document.getElementById('subject-list');
         let html = '<ul>';
-
         const sortedDisciplines = Object.keys(treeData).sort();
         if (sortedDisciplines.length === 0 && filterText) {
             container.innerHTML = `<p style="text-align:center; color:#888;">'${filterText}'에 대한 검색 결과가 없습니다.</p>`;
             return;
         }
-
         for (const discipline of sortedDisciplines) {
-            // 필터링 시에는 항상 펼침
-            const isExpanded = filterText ? 'expanded' : ''; 
+            const isExpanded = filterText ? 'expanded' : '';
             const isHidden = filterText ? '' : 'hidden';
-
-            html += `
-                <li class="subject-node">
-                    <div class="node-header ${isExpanded}" onclick="toggleNode(this)">
-                        <span class="node-icon">▶</span><span class="node-name">${discipline}</span>
-                    </div>
-                    <ul class="${isHidden}">`;
-            
+            html += `<li class="subject-node"><div class="node-header ${isExpanded}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${discipline}</span></div><ul class="${isHidden}">`;
             const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
             for (const semester of sortedSemesters) {
-                html += `
-                    <li>
-                        <div class="node-header ${isExpanded}" onclick="toggleNode(this)">
-                            <span class="node-icon">▶</span><span class="node-name">${semester}</span>
-                        </div>
-                        <ul class="${isHidden}">`;
-                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
-                    html += `<li>${getSubjectItemHTML(subject)}</li>`;
-                });
+                html += `<li><div class="node-header ${isExpanded}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${semester}</span></div><ul class="${isHidden}">`;
+                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
                 html += `</ul></li>`;
             }
-            treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
-                html += `<li>${getSubjectItemHTML(subject)}</li>`;
-            });
+            treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
             html += `</ul></li>`;
         }
         html += `</ul>`;
@@ -328,59 +289,8 @@
         return tree;
     }
 
-    function renderSubjectTree() {
-        const treeData = buildSubjectTreeData();
-        const container = document.getElementById('subject-list');
-        let html = '<ul>';
-
-        const sortedDisciplines = Object.keys(treeData).sort();
-        for (const discipline of sortedDisciplines) {
-            html += `
-                <li class="subject-node">
-                    <div class="node-header expanded" onclick="toggleNode(this)">
-                        <span class="node-icon">▶</span>
-                        <span class="node-name">${discipline}</span>
-                    </div>
-                    <ul>`; // hidden 클래스 제거
-            
-            const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
-            for (const semester of sortedSemesters) {
-                html += `
-                    <li>
-                        <div class="node-header expanded" onclick="toggleNode(this)">
-                            <span class="node-icon">▶</span>
-                            <span class="node-name">${semester}</span>
-                        </div>
-                        <ul>`; // hidden 클래스 제거
-                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
-                    html += `<li>${getSubjectItemHTML(subject)}</li>`;
-                });
-                html += `</ul></li>`;
-            }
-
-            treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => {
-                html += `<li>${getSubjectItemHTML(subject)}</li>`;
-            });
-
-            html += `</ul></li>`;
-        }
-        html += `</ul>`;
-        container.innerHTML = html;
-    }
-    
     function getSubjectItemHTML(subject) {
-        return `
-            <div class="subject-item">
-                <div class="subject-item-name-container">
-                    <span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span>
-                </div>
-                <div class="subject-item-buttons">
-                    <button class="button primary-button" onclick="startQuiz('${subject.id}')">퀴즈 시작</button>
-                    <button class="button secondary-button" onclick="manageSubject('${subject.id}')">문제 관리</button>
-                    <button class="edit-btn" onclick="showSubjectForm('${subject.id}')">✏️</button>
-                    <button class="delete-btn" onclick="deleteSubject('${subject.id}', '${subject.name}')">🗑️</button>
-                </div>
-            </div>`;
+        return `<div class="subject-item"><div class="subject-item-name-container"><span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span></div><div class="subject-item-buttons"><button class="button primary-button" onclick="startQuiz('${subject.id}')">퀴즈 시작</button><button class="button secondary-button" onclick="manageSubject('${subject.id}')">문제 관리</button><button class="edit-btn" onclick="showSubjectForm('${subject.id}')">✏️</button><button class="delete-btn" onclick="deleteSubject('${subject.id}', '${subject.name}')">🗑️</button></div></div>`;
     }
 
     function toggleNode(element) {
@@ -397,7 +307,6 @@
     }
     
     function collapseAllNodes() {
-        // 최상위 ul은 제외하고 모두 접기
         document.querySelectorAll('#subject-list > ul > li > ul').forEach(ul => ul.classList.add('hidden'));
         document.querySelectorAll('#subject-list .node-header').forEach(header => header.classList.remove('expanded'));
     }
@@ -406,66 +315,28 @@
         const isEditing = !!subjectId;
         const subject = isEditing ? allSubjects.find(s => s.id === subjectId) : {};
         const modalContainer = document.getElementById('modal-container');
-        
         modalContainer.innerHTML = `
             <div class="modal-backdrop" onclick="closeModal()"></div>
             <div class="modal">
                 <h3>${isEditing ? '과목 수정' : '새 과목 추가'}</h3>
-                <div class="form-group">
-                    <label for="subject-discipline">학문 (예: 응급구조사, 자격증)</label>
-                    <input type="text" id="subject-discipline" value="${subject.discipline || ''}" list="disciplines-list">
-                    <datalist id="disciplines-list">
-                        ${[...new Set(allSubjects.map(s => s.discipline).filter(Boolean))]
-                            .map(d => `<option value="${d}"></option>`).join('')}
-                    </datalist>
-                </div>
-                <div class="form-group">
-                    <label for="subject-semester">학기 (선택 사항, 예: 1-2, 2-1)</label>
-                    <input type="text" id="subject-semester" value="${subject.semester || ''}">
-                </div>
-                <div class="form-group">
-                    <label for="subject-name">과목명</label>
-                    <input type="text" id="subject-name" value="${subject.name || ''}">
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="button light-button" onclick="closeModal()">취소</button>
-                    <button class="button primary-button" onclick="saveSubject('${subjectId || ''}')">저장</button>
-                </div>
-            </div>
-        `;
+                <div class="form-group"><label for="subject-discipline">학문 (예: 응급구조사, 자격증)</label><input type="text" id="subject-discipline" value="${subject.discipline || ''}" list="disciplines-list"><datalist id="disciplines-list">${[...new Set(allSubjects.map(s => s.discipline).filter(Boolean))].map(d => `<option value="${d}"></option>`).join('')}</datalist></div>
+                <div class="form-group"><label for="subject-semester">학기 (선택 사항, 예: 1-2, 2-1)</label><input type="text" id="subject-semester" value="${subject.semester || ''}"></div>
+                <div class="form-group"><label for="subject-name">과목명</label><input type="text" id="subject-name" value="${subject.name || ''}"></div>
+                <div style="display: flex; gap: 10px;"><button class="button light-button" onclick="closeModal()">취소</button><button class="button primary-button" onclick="saveSubject('${subjectId || ''}')">저장</button></div>
+            </div>`;
     }
 
-    function closeModal() {
-        document.getElementById('modal-container').innerHTML = '';
-    }
+    function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
 
     async function saveSubject(subjectId) {
-        const data = {
-            name: document.getElementById('subject-name').value.trim(),
-            discipline: document.getElementById('subject-discipline').value.trim(),
-            semester: document.getElementById('subject-semester').value.trim()
-        };
-
-        if (!data.name || !data.discipline) {
-            showFeedback('학문과 과목명은 필수입니다.');
-            return;
-        }
-
+        const data = { name: document.getElementById('subject-name').value.trim(), discipline: document.getElementById('subject-discipline').value.trim(), semester: document.getElementById('subject-semester').value.trim() };
+        if (!data.name || !data.discipline) { showFeedback('학문과 과목명은 필수입니다.'); return; }
         try {
-            if (subjectId) { // 수정
-                await db.collection('subjects').doc(subjectId).update(data);
-                showFeedback('과목이 수정되었습니다.', 'success');
-            } else { // 추가
-                data.questionCount = 0;
-                await db.collection('subjects').add(data);
-                showFeedback('새 과목이 추가되었습니다.', 'success');
-            }
+            if (subjectId) { await db.collection('subjects').doc(subjectId).update(data); showFeedback('과목이 수정되었습니다.', 'success'); } 
+            else { data.questionCount = 0; await db.collection('subjects').add(data); showFeedback('새 과목이 추가되었습니다.', 'success'); }
             closeModal();
             await loadSubjects();
-        } catch (error) {
-            console.error("과목 저장 중 오류:", error);
-            showFeedback('과목 저장 중 오류가 발생했습니다.');
-        }
+        } catch (error) { console.error("과목 저장 중 오류:", error); showFeedback('과목 저장 중 오류가 발생했습니다.'); }
     }
     
     async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
