@@ -13,19 +13,19 @@
         /* 버튼 */
         .button { width: 100%; padding: 12px; font-size: 1rem; border-radius: 6px; cursor: pointer; margin-top: 10px; border: 1px solid #dee2e6; font-weight: 600; transition: all 0.2s ease-in-out; }
         .primary-button { background-color: #0d6efd; color: white; border-color: #0d6efd; }
-        .primary-button:hover { background-color: #0b5ed7; }
         .secondary-button { background-color: #6c757d; color: white; border-color: #6c757d; }
         .light-button { background-color: #f8f9fa; color: #212529; }
-        .light-button:hover { background-color: #e2e6ea; }
         .small-button { width: auto; padding: 5px 10px; font-size: 0.8em; margin: 0; }
+        .icon-button { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.2rem; color: #6c757d; border-radius: 5px; line-height: 1; }
+        .icon-button:hover { background-color: #e9ecef; }
 
         /* 상단 인증 영역 */
         #auth-container { display: flex; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         
-        /* 폼 그룹 & 입력창 스타일 통일 */
-        form-group { margin-bottom: 15px; }
+        /* 폼 그룹 & 입력창 */
+        .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
@@ -91,7 +91,6 @@
         #subject-search { padding: 8px 12px; font-size: 0.9em; border-radius: 6px; border: 1px solid #ccc; min-width: 200px;}
 
         #subject-list ul { list-style: none; padding-left: 20px; margin: 0; }
-        .subject-node { padding: 5px; border-radius: 6px; }
         .node-header { display: flex; align-items: center; cursor: pointer; padding: 5px; border-radius: 4px;}
         .node-header:hover { background-color: #f0f2f5; }
         .node-icon { margin-right: 8px; transition: transform 0.2s; display: inline-block; width: 1em; }
@@ -126,7 +125,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script>
+<script>
 
         const firebaseConfig = {
     apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
@@ -144,7 +143,7 @@
     // 전역 변수
     let allSubjects = [];
     const views = ['subject-view', 'management-view', 'quiz-view', 'login-view', 'signup-view', 'add-edit-view'];
-    let userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; 
+    let userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
     let currentLearningMode = 'list';
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
@@ -152,9 +151,9 @@
     // ==================================
     // ## 앱 초기화 및 화면 렌더링 ##
     // ==================================
-    document.addEventListener('DOMContentLoaded', () => {
+     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('auth-container').innerHTML = `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div><div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
-        document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-controls"><div id="subject-tree-actions"><button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button><button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button></div><input type="search" id="subject-search" placeholder="학문/학기/과목명 검색..." onkeyup="filterSubjectTree()"></div><div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div><button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
+        document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-controls"><div id="subject-tree-actions"><button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button><button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button><button class="icon-button" onclick="showTreeSettingsModal()" title="기본 보기 설정">⚙️</button></div><input type="search" id="subject-search" placeholder="학문/학기/과목명 검색..." onkeyup="filterSubjectTree()"></div><div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div><button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
         document.getElementById('management-view').innerHTML = `<h2 id="management-header"></h2><div class="management-controls"><div class="learning-mode-selector" id="learning-mode-selector"></div><button class="button primary-button" style="margin-top:0; width: auto;" onclick="showFullEditView()">+ 새 문제 추가</button></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>`;
         document.getElementById('login-view').innerHTML = `<h2>로그인</h2><div class="form-group"><label for="login-email">이메일</label><input type="email" id="login-email"></div><div class="form-group"><label for="login-password">비밀번호</label><input type="password" id="login-password"></div><button class="button primary-button" onclick="logIn()">로그인</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
         document.getElementById('signup-view').innerHTML = `<h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
@@ -168,7 +167,7 @@
                 await loadSubjects(); 
                 showView('subject-view'); 
             } else { 
-                userSettings = { subjectTreeState: {} };
+                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
                 document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; 
                 showView('subject-view'); 
             } 
@@ -198,36 +197,8 @@
         }
     });
 
-    async function loadUserSettings(userId) {
-        const userDocRef = db.collection('users').doc(userId);
-        try {
-            const doc = await userDocRef.get();
-            if (doc.exists && doc.data().settings) {
-                userSettings = doc.data().settings;
-                // 기본값 보장
-                if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {};
-                if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded';
-            } else {
-                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
-            }
-        } catch (error) {
-            console.error("Error loading user settings:", error);
-            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
-        }
-    }
-
-    async function saveUserSettings() {
-        const user = auth.currentUser;
-        if (!user) return;
-        const userDocRef = db.collection('users').doc(user.uid);
-        try {
-            // set with merge: 문서가 없으면 생성, 있으면 병합하여 필드 업데이트
-            await userDocRef.set({ settings: userSettings }, { merge: true });
-        } catch (error) {
-            console.error("Error saving user settings:", error);
-        }
-    }
-        
+    async function loadUserSettings(userId) { const userDocRef = db.collection('users').doc(userId); try { const doc = await userDocRef.get(); if (doc.exists && doc.data().settings) { userSettings = doc.data().settings; if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {}; if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded'; } else { userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; } } catch (error) { console.error("Error loading user settings:", error); userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; } }
+    async function saveUserSettings() { const user = auth.currentUser; if (!user) return; const userDocRef = db.collection('users').doc(user.uid); try { await userDocRef.set({ settings: userSettings }, { merge: true }); } catch (error) { console.error("Error saving user settings:", error); } }
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { showFeedback(e.message); } }
     function logOut() { auth.signOut(); }
@@ -265,28 +236,18 @@
 
         for (const discipline of sortedDisciplines) {
             const disciplineState = userSettings.subjectTreeState[discipline];
-            // 1. 검색어 있나? -> 펼침
-            // 2. 개별 저장된 상태 있나? -> 그걸 따름
-            // 3. 기본 설정값이 'collapsed'인가? -> 접음
-            // 4. 그 외(기본값이 'expanded'거나 미설정) -> 펼침
-            const isExpanded = !!filterText || 
-                             (disciplineState ? disciplineState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
+            const isExpanded = !!filterText || (disciplineState ? disciplineState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
+            html += `<li><div class="node-header ${isExpanded ? 'expanded' : ''}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${discipline}</span></div><ul class="${isExpanded ? '' : 'hidden'}">`;
             
-            html += `<li><div class="node-header ${isExpanded ? 'expanded' : ''}" onclick="toggleNode(this)">...</div><ul class="${isExpanded ? '' : 'hidden'}">`;
-            
+            const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
             for (const semester of sortedSemesters) {
                 const semesterState = userSettings.subjectTreeState[semester];
-                const isSemesterExpanded = !!filterText || 
-                                         (semesterState ? semesterState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
-
+                const isSemesterExpanded = !!filterText || (semesterState ? semesterState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
                 html += `<li><div class="node-header ${isSemesterExpanded ? 'expanded' : ''}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${semester}</span></div><ul class="${isSemesterExpanded ? '' : 'hidden'}">`;
                 treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
                 html += `</ul></li>`;
             }
-
-            // 그 다음에 학기가 없는 과목들 렌더링
             treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
-            
             html += `</ul></li>`;
         }
         html += `</ul>`;
