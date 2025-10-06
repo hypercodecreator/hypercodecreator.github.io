@@ -25,7 +25,7 @@
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         
         /* 폼 그룹 & 입력창 스타일 통일 */
-        .form-group { margin-bottom: 15px; }
+        form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
         .dynamic-field-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
@@ -86,7 +86,7 @@
         #tree-panel ul.collapsed { display: none; }
 
         /* 과목 트리 레이아웃 */
-        #subject-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+         #subject-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         #subject-tree-actions { display: flex; gap: 10px; }
         #subject-search { padding: 8px 12px; font-size: 0.9em; border-radius: 6px; border: 1px solid #ccc; min-width: 200px;}
 
@@ -106,7 +106,7 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
         .edit-btn:hover, .delete-btn:hover { background-color: #e9ecef; }
 
-        /* 모달 */
+         /* 모달 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
      </style>
@@ -144,6 +144,7 @@
     // 전역 변수
     let allSubjects = [];
     const views = ['subject-view', 'management-view', 'quiz-view', 'login-view', 'signup-view', 'add-edit-view'];
+    let userSettings = { subjectTreeState: {} }; 
     let currentLearningMode = 'list';
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
@@ -214,7 +215,50 @@
     // ==================================
     // ## 인증 및 앱 시작 함수 ##
     // ==================================
-    auth.onAuthStateChanged(async (user) => { const authContainer = document.getElementById('auth-container'); if(authContainer) { authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; } if (user) { await loadSubjects(); showView('subject-view'); } else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } });
+    auth.onAuthStateChanged(async (user) => { const authContainer = document.getElementById('auth-container'); 
+         if(authContainer) { authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; } 
+            if (user) { await loadSubjects(); showView('subject-view'); } 
+            else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } 
+         if (user) {
+            await loadUserSettings(user.uid); // ✨ 신규: 로그인 시 사용자 설정 불러오기
+            await loadSubjects();
+            showView('subject-view');
+        } else {
+            userSettings = { subjectTreeState: {} }; // ✨ 신규: 로그아웃 시 설정 초기화
+            // ... (로그아웃 화면 처리)
+        }
+    });
+
+    async function loadUserSettings(userId) {
+        const userDocRef = db.collection('users').doc(userId);
+        try {
+            const doc = await userDocRef.get();
+            if (doc.exists && doc.data().settings) {
+                userSettings = doc.data().settings;
+                if (!userSettings.subjectTreeState) {
+                    userSettings.subjectTreeState = {};
+                }
+            } else {
+                userSettings = { subjectTreeState: {} };
+            }
+        } catch (error) {
+            console.error("Error loading user settings:", error);
+            userSettings = { subjectTreeState: {} }; // 오류 발생 시 기본값으로
+        }
+    }
+
+    async function saveUserSettings() {
+        const user = auth.currentUser;
+        if (!user) return;
+        const userDocRef = db.collection('users').doc(user.uid);
+        try {
+            // set with merge: 문서가 없으면 생성, 있으면 병합하여 필드 업데이트
+            await userDocRef.set({ settings: userSettings }, { merge: true });
+        } catch (error) {
+            console.error("Error saving user settings:", error);
+        }
+    }
+        
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { showFeedback(e.message); } }
     function logOut() { auth.signOut(); }
@@ -249,14 +293,30 @@
             return;
         }
         for (const discipline of sortedDisciplines) {
-            const isExpanded = filterText ? 'expanded' : '';
-            const isHidden = filterText ? '' : 'hidden';
-            html += `<li class="subject-node"><div class="node-header ${isExpanded}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${discipline}</span></div><ul class="${isHidden}">`;
+            // ✨ 수정: 저장된 상태(userSettings)를 확인하여 펼침/접힘 결정
+            const disciplineState = userSettings.subjectTreeState[discipline];
+            // 1. 검색어가 있으면 무조건 펼침
+            // 2. 저장된 상태가 'collapsed'가 아니면(즉, 'expanded'이거나 미설정이면) 펼침
+            const isExpanded = !!filterText || (disciplineState !== 'collapsed');
+            
+            html += `
+                <li class="subject-node">
+                    <div class="node-header ${isExpanded ? 'expanded' : ''}" onclick="toggleNode(this)">
+                        <span class="node-icon">▶</span><span class="node-name">${discipline}</span>
+                    </div>
+                    <ul class="${isExpanded ? '' : 'hidden'}">`;
+            
             const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
             for (const semester of sortedSemesters) {
-                html += `<li><div class="node-header ${isExpanded}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${semester}</span></div><ul class="${isHidden}">`;
-                treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
-                html += `</ul></li>`;
+                // ✨ 수정: 학기 노드에도 동일한 상태 확인 로직 적용
+                const semesterState = userSettings.subjectTreeState[semester];
+                const isSemesterExpanded = !!filterText || (semesterState !== 'collapsed');
+                html += `
+                    <li>
+                        <div class="node-header ${isSemesterExpanded ? 'expanded' : ''}" onclick="toggleNode(this)">
+                            <span class="node-icon">▶</span><span class="node-name">${semester}</span>
+                        </div>
+                        <ul class="${isSemesterExpanded ? '' : 'hidden'}">`;
             }
             treeData[discipline].noSemester.sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
             html += `</ul></li>`;
@@ -287,21 +347,35 @@
     }
 
     function toggleNode(element) {
-        element.classList.toggle('expanded');
+        const isNowExpanded = element.classList.toggle('expanded');
         const subList = element.nextElementSibling;
         if (subList && subList.tagName === 'UL') {
             subList.classList.toggle('hidden');
         }
+        
+        const nodeName = element.querySelector('.node-name').textContent;
+        userSettings.subjectTreeState[nodeName] = isNowExpanded ? 'expanded' : 'collapsed';
+        saveUserSettings(); // 변경된 설정을 DB에 저장
     }
 
     function expandAllNodes() {
-        document.querySelectorAll('#subject-list ul').forEach(ul => ul.classList.remove('hidden'));
-        document.querySelectorAll('#subject-list .node-header').forEach(header => header.classList.add('expanded'));
+        document.querySelectorAll('#subject-list .node-header').forEach(header => {
+            header.classList.add('expanded');
+            if(header.nextElementSibling) header.nextElementSibling.classList.remove('hidden');
+            const nodeName = header.querySelector('.node-name').textContent;
+            userSettings.subjectTreeState[nodeName] = 'expanded';
+        });
+        saveUserSettings();
     }
     
     function collapseAllNodes() {
-        document.querySelectorAll('#subject-list > ul > li > ul').forEach(ul => ul.classList.add('hidden'));
-        document.querySelectorAll('#subject-list .node-header').forEach(header => header.classList.remove('expanded'));
+        document.querySelectorAll('#subject-list .node-header').forEach(header => {
+            header.classList.remove('expanded');
+            if(header.nextElementSibling) header.nextElementSibling.classList.add('hidden');
+            const nodeName = header.querySelector('.node-name').textContent;
+            userSettings.subjectTreeState[nodeName] = 'collapsed';
+        });
+        saveUserSettings();
     }
     
     function showSubjectForm(subjectId = null) {
