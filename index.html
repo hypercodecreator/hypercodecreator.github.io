@@ -24,7 +24,7 @@
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         
-        /* 폼 그룹 & 입력창 */
+         /* 폼 그룹 & 입력창 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
@@ -85,7 +85,7 @@
         #tree-panel .node.expanded > .node-icon { transform: rotate(90deg); }
         #tree-panel ul.collapsed { display: none; }
 
-        /* 과목 트리 레이아웃 */
+         /* 과목 트리 레이아웃 */
         #subject-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         #subject-tree-actions { display: flex; align-items: center; gap: 10px; }
         #subject-search { padding: 8px 12px; font-size: 0.9em; border-radius: 6px; border: 1px solid #ccc; min-width: 200px;}
@@ -105,12 +105,11 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
         .edit-btn:hover, .delete-btn:hover { background-color: #e9ecef; }
 
-          /* 모달 */
+        /* 모달 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
-        /* 모달 라디오 버튼 스타일 */
         .modal .form-group label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
-        .modal .form-group input[type="radio"] { width: auto; }    </style>
+        .modal .form-group input[type="radio"] { width: auto; }
 </head>
 <body>
     <div class="container">
@@ -153,7 +152,7 @@
     // ==================================
     // ## 앱 초기화 및 화면 렌더링 ##
     // ==================================
-     document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('auth-container').innerHTML = `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div><div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
         document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-controls"><div id="subject-tree-actions"><button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button><button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button><button class="icon-button" onclick="showTreeSettingsModal()" title="기본 보기 설정">⚙️</button></div><input type="search" id="subject-search" placeholder="학문/학기/과목명 검색..." onkeyup="filterSubjectTree()"></div><div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div><button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
         document.getElementById('management-view').innerHTML = `<h2 id="management-header"></h2><div class="management-controls"><div class="learning-mode-selector" id="learning-mode-selector"></div><button class="button primary-button" style="margin-top:0; width: auto;" onclick="showFullEditView()">+ 새 문제 추가</button></div><div id="question-list-container"></div><button class="button light-button" onclick="showView('subject-view')" style="margin-top: 20px;">↩️ 과목 선택으로</button>`;
@@ -162,8 +161,6 @@
         document.getElementById('add-edit-view').innerHTML = `<h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><h4>1. 문제 정보 (필수)</h4><div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div><div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div><div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div><hr><h4>2. 목차 정보 (이론 학습용)</h4><div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div><div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div><div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div><hr><h4>3. 기출 정보 (실전 학습용)</h4><div class="form-group"><label for="q-examYear">연도</label><input type="text" id="q-examYear" placeholder="예: 2024"></div><div class="form-group"><label for="q-examRound">회차</label><input type="text" id="q-examRound" placeholder="예: 1회"></div><div class="form-group"><label for="q-examNumber">문제 번호</label><input type="text" id="q-examNumber" placeholder="예: 45번"></div><hr><h4>4. 객관식 보기 (선택)</h4><div class="form-group"><div id="q-options-container"></div><button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button></div><hr><h4>5. 개념 분석 (키워드/태그)</h4><div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div><div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div><div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div><hr><div style="display:flex; gap: 10px;"><button class="button light-button" onclick="showManagementView(false)">취소</button><button id="save-full-btn" class="button primary-button">저장</button></div>`;
     
         auth.onAuthStateChanged(async (user) => {
-            const authContainer = document.getElementById('auth-container'); 
-            if(authContainer) { authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; } 
             if (user) { 
                 await loadUserSettings(user.uid);
                 await loadSubjects(); 
@@ -171,7 +168,7 @@
             } else { 
                 userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
                 document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; 
-                showView('subject-view'); 
+                showView('login-view'); // 로그인 안되어 있으면 로그인 화면으로
             } 
         });
     });
