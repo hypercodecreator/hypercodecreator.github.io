@@ -168,7 +168,7 @@
             } else { 
                 userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
                 document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; 
-                showView('login-view'); // 로그인 안되어 있으면 로그인 화면으로
+                showView('login-view');
             } 
         });
     });
@@ -182,20 +182,7 @@
     // ==================================
     // ## 인증 및 앱 시작 함수 ##
     // ==================================
-    auth.onAuthStateChanged(async (user) => { const authContainer = document.getElementById('auth-container'); 
-         if(authContainer) { authContainer.innerHTML = user ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`; } 
-            if (user) { await loadSubjects(); showView('subject-view'); } 
-            else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } 
-         if (user) {
-            await loadUserSettings(user.uid);
-            await loadSubjects();
-            showView('subject-view');
-        } else {
-            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
-            // ... (로그아웃 화면 처리)
-        }
-    });
-
+    
     async function loadUserSettings(userId) { const userDocRef = db.collection('users').doc(userId); try { const doc = await userDocRef.get(); if (doc.exists && doc.data().settings) { userSettings = doc.data().settings; if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {}; if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded'; } else { userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; } } catch (error) { console.error("Error loading user settings:", error); userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; } }
     async function saveUserSettings() { const user = auth.currentUser; if (!user) return; const userDocRef = db.collection('users').doc(user.uid); try { await userDocRef.set({ settings: userSettings }, { merge: true }); } catch (error) { console.error("Error saving user settings:", error); } }
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
