@@ -105,10 +105,12 @@
         .edit-btn, .delete-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 1.1rem; color: #6c757d; border-radius: 5px; }
         .edit-btn:hover, .delete-btn:hover { background-color: #e9ecef; }
 
-         /* 모달 */
+          /* 모달 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
-    </style>
+        /* 모달 라디오 버튼 스타일 */
+        .modal .form-group label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+        .modal .form-group input[type="radio"] { width: auto; }    </style>
 </head>
 <body>
     <div class="container">
