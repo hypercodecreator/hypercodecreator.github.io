@@ -240,22 +240,7 @@
         container.innerHTML = html;
     }
 
-    function buildSubjectTreeData(subjects) {
-        const tree = {};
-        subjects.forEach(subject => {
-            const discipline = subject.discipline || '미지정 학문';
-            const semester = subject.semester || null;
-            if (!tree[discipline]) tree[discipline] = { semesters: {}, noSemester: [] };
-            if (semester) {
-                if (!tree[discipline].semesters[semester]) tree[discipline].semesters[semester] = [];
-                tree[discipline].semesters[semester].push(subject);
-            } else {
-                tree[discipline].noSemester.push(subject);
-            }
-        });
-        return tree;
-    }
-
+    function buildSubjectTreeData(subjects) { const tree = {}; subjects.forEach(subject => { const discipline = subject.discipline || '미지정 학문'; const semester = subject.semester || null; if (!tree[discipline]) tree[discipline] = { semesters: {}, noSemester: [] }; if (semester) { if (!tree[discipline].semesters[semester]) tree[discipline].semesters[semester] = []; tree[discipline].semesters[semester].push(subject); } else { tree[discipline].noSemester.push(subject); } }); return tree; }
     function getSubjectItemHTML(subject) { return `<div class="subject-item"><div class="subject-item-name-container"><span class="subject-item-name">${subject.name} (${subject.questionCount || 0}문제)</span></div><div class="subject-item-buttons"><button class="button primary-button" onclick="startQuiz('${subject.id}')">퀴즈 시작</button><button class="button secondary-button" onclick="manageSubject('${subject.id}')">문제 관리</button><button class="edit-btn" onclick="showSubjectForm('${subject.id}')">✏️</button><button class="delete-btn" onclick="deleteSubject('${subject.id}', '${subject.name}')">🗑️</button></div></div>`; }
     function toggleNode(element) { const isNowExpanded = element.classList.toggle('expanded'); const subList = element.nextElementSibling; if (subList && subList.tagName === 'UL') { subList.classList.toggle('hidden'); } const nodeName = element.querySelector('.node-name').textContent; userSettings.subjectTreeState[nodeName] = isNowExpanded ? 'expanded' : 'collapsed'; saveUserSettings(); }
     function expandAllNodes() { document.querySelectorAll('#subject-list .node-header').forEach(header => { header.classList.add('expanded'); if(header.nextElementSibling) header.nextElementSibling.classList.remove('hidden'); const nodeName = header.querySelector('.node-name').textContent; userSettings.subjectTreeState[nodeName] = 'expanded'; }); saveUserSettings(); }
@@ -264,7 +249,9 @@
     function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
     async function saveSubject(subjectId) { const data = { name: document.getElementById('subject-name').value.trim(), discipline: document.getElementById('subject-discipline').value.trim(), semester: document.getElementById('subject-semester').value.trim() }; if (!data.name || !data.discipline) { showFeedback('학문과 과목명은 필수입니다.'); return; } try { if (subjectId) { await db.collection('subjects').doc(subjectId).update(data); showFeedback('과목이 수정되었습니다.', 'success'); } else { data.questionCount = 0; await db.collection('subjects').add(data); showFeedback('새 과목이 추가되었습니다.', 'success'); } closeModal(); await loadSubjects(); } catch (error) { console.error("과목 저장 중 오류:", error); showFeedback('과목 저장 중 오류가 발생했습니다.'); } }
     async function deleteSubject(subjectId, subjectName) { if (!confirm(`'${subjectName}' 과목과 모든 문제를 삭제합니다. 계속하시겠습니까?`)) return; try { const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get(); const batch = db.batch(); questionsSnapshot.forEach(doc => batch.delete(doc.ref)); const subjectRef = db.collection('subjects').doc(subjectId); batch.delete(subjectRef); await batch.commit(); showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success'); await loadSubjects(); } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); } }
-
+    function showTreeSettingsModal() { const modalContainer = document.getElementById('modal-container'); const isDefaultExpanded = userSettings.subjectTreeDefaultState === 'expanded'; modalContainer.innerHTML = `<div class="modal-backdrop" onclick="closeModal()"></div><div class="modal"><h3>과목 트리 기본 보기 설정</h3><div class="form-group"><label><input type="radio" name="tree-default-state" value="expanded" ${isDefaultExpanded ? 'checked' : ''}> 모두 펼치기</label><label><input type="radio" name="tree-default-state" value="collapsed" ${!isDefaultExpanded ? 'checked' : ''}> 모두 접기</label></div><div style="display: flex; gap: 10px;"><button class="button light-button" onclick="closeModal()">취소</button><button class="button primary-button" onclick="saveDefaultTreeState()">저장</button></div></div>`; }
+    function saveDefaultTreeState() { const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value; userSettings.subjectTreeDefaultState = selectedState; saveUserSettings(); closeModal(); renderSubjectTree(); showFeedback('기본 보기 설정이 저장되었습니다.', 'success'); }
+                                                                                                                                                                                                                                                                                                                                                           
     async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
     function showAddSubjectForm() { if(document.getElementById('add-subject-form')) return; const listDiv = document.getElementById('subject-list'); listDiv.insertAdjacentHTML('beforeend', `<div id="add-subject-form" style="margin-top: 20px; padding: 20px; border: 1px solid #eee; border-radius: 8px;"><div class="form-group"><label style="font-weight: bold;">새 과목 이름</label><input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기"></div><div style="display: flex; gap: 10px; margin-top: 5px;"><button class="button light-button" style="flex: 1;" onclick="hideAddSubjectForm()">취소</button><button class="button primary-button" style="flex: 1;" onclick="addSubject()">저장</button></div></div>`); document.getElementById('add-subject-button').classList.add('hidden');}
     function hideAddSubjectForm() { const form = document.getElementById('add-subject-form'); if(form) form.remove(); document.getElementById('add-subject-button').classList.remove('hidden'); }
@@ -272,35 +259,6 @@
     async function saveSubjectUpdate(subjectId) { const input = document.getElementById(`edit-subject-input-${subjectId}`); const newName = input.value.trim(); if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; } try { await db.collection('subjects').doc(subjectId).update({ name: newName }); showFeedback("과목 이름이 수정되었습니다.", "success"); } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); } await loadSubjects(); }
     function cancelEdit() { loadSubjects(); }
 
-    function showTreeSettingsModal() {
-        const modalContainer = document.getElementById('modal-container');
-        const isDefaultExpanded = userSettings.subjectTreeDefaultState === 'expanded';
-        
-        modalContainer.innerHTML = `
-            <div class="modal-backdrop" onclick="closeModal()"></div>
-            <div class="modal">
-                <h3>과목 트리 기본 보기 설정</h3>
-                <div class="form-group">
-                    <label><input type="radio" name="tree-default-state" value="expanded" ${isDefaultExpanded ? 'checked' : ''}> 모두 펼치기</label>
-                    <label><input type="radio" name="tree-default-state" value="collapsed" ${!isDefaultExpanded ? 'checked' : ''}> 모두 접기</label>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="button light-button" onclick="closeModal()">취소</button>
-                    <button class="button primary-button" onclick="saveDefaultTreeState()">저장</button>
-                </div>
-            </div>
-        `;
-    }
-
-    function saveDefaultTreeState() {
-        const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value;
-        userSettings.subjectTreeDefaultState = selectedState;
-        saveUserSettings(); // DB에 저장
-        closeModal();
-        renderSubjectTree(); // 변경사항 즉시 반영
-        showFeedback('기본 보기 설정이 저장되었습니다.', 'success');
-    }
-        
     // ==================================
     // ## 문제 관리(Management View) 함수 ##
     // ==================================
