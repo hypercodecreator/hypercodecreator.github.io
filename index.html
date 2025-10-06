@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -86,8 +86,8 @@
         #tree-panel ul.collapsed { display: none; }
 
         /* 과목 트리 레이아웃 */
-         #subject-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        #subject-tree-actions { display: flex; gap: 10px; }
+        #subject-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        #subject-tree-actions { display: flex; align-items: center; gap: 10px; }
         #subject-search { padding: 8px 12px; font-size: 0.9em; border-radius: 6px; border: 1px solid #ccc; min-width: 200px;}
 
         #subject-list ul { list-style: none; padding-left: 20px; margin: 0; }
@@ -109,7 +109,7 @@
          /* 모달 */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 20; width: 90%; max-width: 500px; }
-     </style>
+    </style>
 </head>
 <body>
     <div class="container">
@@ -122,13 +122,13 @@
         <div id="add-edit-view" class="hidden"></div>
     </div>
     <div id="modal-container"></div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
-    const firebaseConfig = {
+
+        const firebaseConfig = {
     apiKey: "AIzaSyBl4mNG0HVKLY159dPjJEuYZTp9_ay_guk",
           authDomain: "my-cbt-app-2cdb9.firebaseapp.com",
           projectId: "my-cbt-app-2cdb9",
@@ -144,7 +144,7 @@
     // 전역 변수
     let allSubjects = [];
     const views = ['subject-view', 'management-view', 'quiz-view', 'login-view', 'signup-view', 'add-edit-view'];
-    let userSettings = { subjectTreeState: {} }; 
+    let userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; 
     let currentLearningMode = 'list';
     let currentSubjectId, currentSubjectData, allQuestionsForSubject = [];
     let quizQuestions = [], selectedOption, currentQuizIndex = 0, quizScore = 0;
@@ -189,11 +189,11 @@
             if (user) { await loadSubjects(); showView('subject-view'); } 
             else { document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; showView('subject-view'); } 
          if (user) {
-            await loadUserSettings(user.uid); // ✨ 신규: 로그인 시 사용자 설정 불러오기
+            await loadUserSettings(user.uid);
             await loadSubjects();
             showView('subject-view');
         } else {
-            userSettings = { subjectTreeState: {} }; // ✨ 신규: 로그아웃 시 설정 초기화
+            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
             // ... (로그아웃 화면 처리)
         }
     });
@@ -204,15 +204,15 @@
             const doc = await userDocRef.get();
             if (doc.exists && doc.data().settings) {
                 userSettings = doc.data().settings;
-                if (!userSettings.subjectTreeState) {
-                    userSettings.subjectTreeState = {};
-                }
+                // 기본값 보장
+                if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {};
+                if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded';
             } else {
-                userSettings = { subjectTreeState: {} };
+                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
             }
         } catch (error) {
             console.error("Error loading user settings:", error);
-            userSettings = { subjectTreeState: {} }; // 오류 발생 시 기본값으로
+            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
         }
     }
 
@@ -265,15 +265,20 @@
 
         for (const discipline of sortedDisciplines) {
             const disciplineState = userSettings.subjectTreeState[discipline];
-            const isExpanded = !!filterText || (disciplineState !== 'collapsed');
+            // 1. 검색어 있나? -> 펼침
+            // 2. 개별 저장된 상태 있나? -> 그걸 따름
+            // 3. 기본 설정값이 'collapsed'인가? -> 접음
+            // 4. 그 외(기본값이 'expanded'거나 미설정) -> 펼침
+            const isExpanded = !!filterText || 
+                             (disciplineState ? disciplineState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
             
-            html += `<li><div class="node-header ${isExpanded ? 'expanded' : ''}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${discipline}</span></div><ul class="${isExpanded ? '' : 'hidden'}">`;
+            html += `<li><div class="node-header ${isExpanded ? 'expanded' : ''}" onclick="toggleNode(this)">...</div><ul class="${isExpanded ? '' : 'hidden'}">`;
             
-            // 학기가 있는 과목들 먼저 렌더링
-            const sortedSemesters = Object.keys(treeData[discipline].semesters).sort();
             for (const semester of sortedSemesters) {
                 const semesterState = userSettings.subjectTreeState[semester];
-                const isSemesterExpanded = !!filterText || (semesterState !== 'collapsed');
+                const isSemesterExpanded = !!filterText || 
+                                         (semesterState ? semesterState === 'expanded' : userSettings.subjectTreeDefaultState === 'expanded');
+
                 html += `<li><div class="node-header ${isSemesterExpanded ? 'expanded' : ''}" onclick="toggleNode(this)"><span class="node-icon">▶</span><span class="node-name">${semester}</span></div><ul class="${isSemesterExpanded ? '' : 'hidden'}">`;
                 treeData[discipline].semesters[semester].sort((a,b) => a.name.localeCompare(b.name)).forEach(subject => { html += `<li>${getSubjectItemHTML(subject)}</li>`; });
                 html += `</ul></li>`;
@@ -319,7 +324,36 @@
     function startEditSubject(subjectId, currentName) { if (document.querySelector('.subject-name-input')) { cancelEdit(); return; } const nameContainer = document.getElementById(`subject-name-container-${subjectId}`); const buttonsContainer = nameContainer.closest('.subject-item').querySelector('.subject-item-buttons'); nameContainer.innerHTML = `<input type="text" id="edit-subject-input-${subjectId}" class="subject-name-input" value="${currentName}">`; buttonsContainer.innerHTML = `<button class="button light-button small-button" onclick="cancelEdit()">취소</button><button class="button primary-button small-button" onclick="saveSubjectUpdate('${subjectId}')">저장</button>`; document.getElementById(`edit-subject-input-${subjectId}`).focus(); }
     async function saveSubjectUpdate(subjectId) { const input = document.getElementById(`edit-subject-input-${subjectId}`); const newName = input.value.trim(); if (!newName) { showFeedback("과목 이름은 비워둘 수 없습니다."); return; } try { await db.collection('subjects').doc(subjectId).update({ name: newName }); showFeedback("과목 이름이 수정되었습니다.", "success"); } catch (error) { console.error("과목 이름 수정 중 오류:", error); showFeedback("과목 이름 수정 중 오류가 발생했습니다."); } await loadSubjects(); }
     function cancelEdit() { loadSubjects(); }
-   
+
+    function showTreeSettingsModal() {
+        const modalContainer = document.getElementById('modal-container');
+        const isDefaultExpanded = userSettings.subjectTreeDefaultState === 'expanded';
+        
+        modalContainer.innerHTML = `
+            <div class="modal-backdrop" onclick="closeModal()"></div>
+            <div class="modal">
+                <h3>과목 트리 기본 보기 설정</h3>
+                <div class="form-group">
+                    <label><input type="radio" name="tree-default-state" value="expanded" ${isDefaultExpanded ? 'checked' : ''}> 모두 펼치기</label>
+                    <label><input type="radio" name="tree-default-state" value="collapsed" ${!isDefaultExpanded ? 'checked' : ''}> 모두 접기</label>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="button light-button" onclick="closeModal()">취소</button>
+                    <button class="button primary-button" onclick="saveDefaultTreeState()">저장</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function saveDefaultTreeState() {
+        const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value;
+        userSettings.subjectTreeDefaultState = selectedState;
+        saveUserSettings(); // DB에 저장
+        closeModal();
+        renderSubjectTree(); // 변경사항 즉시 반영
+        showFeedback('기본 보기 설정이 저장되었습니다.', 'success');
+    }
+        
     // ==================================
     // ## 문제 관리(Management View) 함수 ##
     // ==================================
