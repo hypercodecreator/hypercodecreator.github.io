@@ -194,24 +194,31 @@
     // ## 인증 및 앱 시작 함수 ##
     // ==================================
     async function initializeApp(user) {
+        console.log("-> 1. initializeApp 시작");
         await loadUserSettings(user.uid);
+        console.log("-> 4. loadUserSettings 완료. 다음으로 loadSubjects 시작.");
         await loadSubjects();
+        console.log("-> 5. loadSubjects 완료.");
         showView('subject-view');
     }
 
     async function loadUserSettings(userId) {
+        console.log("-> 2. loadUserSettings 시작 (사용자 ID:", userId, ")");
         const userDocRef = db.collection('users').doc(userId);
         try {
             const doc = await userDocRef.get();
+            console.log("-> 3. Firestore 'users' 컬렉션 조회 시도 완료.");
             if (doc.exists && doc.data().settings) {
+                console.log("   - 결과: DB에서 설정 발견.", doc.data().settings);
                 userSettings = doc.data().settings;
                 if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {};
                 if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded';
             } else {
+                console.log("   - 결과: DB에 사용자 문서 또는 settings 필드가 없음. 기본값 사용.");
                 userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
             }
         } catch (error) {
-            console.error("사용자 설정 로딩 중 오류:", error);
+            console.error("   - 에러: 사용자 설정 로딩 중 심각한 오류 발생:", error);
             userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
         }
     }
