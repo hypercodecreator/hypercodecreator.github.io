@@ -24,7 +24,7 @@
         #auth-container span { margin-right: auto; font-size: 0.9em; color: #555; }
         #auth-container .button { width: auto; font-size: 0.9em; padding: 8px 12px; margin-left: 10px; margin-top: 0; }
         
-          /* 폼 그룹 & 입력창 */
+         /* 폼 그룹 & 입력창 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; font-family: inherit; }
@@ -54,13 +54,13 @@
         #tree-panel { flex: 1; min-width: 250px; border: 1px solid #eee; border-radius: 8px; padding: 10px; height: 500px; overflow-y: auto; }
         #problem-list-panel { flex: 2; border: 1px solid #eee; border-radius: 8px; height: 500px; overflow-y: auto; }
         
-        /* 문제 목록 아이템 스타일 통일 */
+       /* 문제 목록 아이템 스타일 통일 */
         .question-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; }
         .question-item:last-child { border-bottom: none; }
         .question-item:hover { background-color: #f8f9fa; }
         .question-item-text { flex-grow: 1; margin-right: 15px; font-size: 0.95em; }
         .question-item-actions { display: flex; gap: 10px; }
-       
+        
         /* 퀴즈 풀이 화면 레이아웃 */
         #quiz-header { padding: 10px 20px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; }
         #quiz-body h4 { font-size: 1.4em; margin-bottom: 25px; line-height: 1.5; }
@@ -284,7 +284,7 @@
     async function deleteSubject(subjectId, subjectName) { if (!confirm(`'${subjectName}' 과목과 모든 문제를 삭제합니다. 계속하시겠습니까?`)) return; try { const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get(); const batch = db.batch(); questionsSnapshot.forEach(doc => batch.delete(doc.ref)); const subjectRef = db.collection('subjects').doc(subjectId); batch.delete(subjectRef); await batch.commit(); showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success'); await loadSubjects(); } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); } }
     function showTreeSettingsModal() { const modalContainer = document.getElementById('modal-container'); const isDefaultExpanded = userSettings.subjectTreeDefaultState === 'expanded'; modalContainer.innerHTML = `<div class="modal-backdrop" onclick="closeModal()"></div><div class="modal"><h3>과목 트리 기본 보기 설정</h3><div class="form-group"><label><input type="radio" name="tree-default-state" value="expanded" ${isDefaultExpanded ? 'checked' : ''}> 모두 펼치기</label><label><input type="radio" name="tree-default-state" value="collapsed" ${!isDefaultExpanded ? 'checked' : ''}> 모두 접기</label></div><div style="display: flex; gap: 10px;"><button class="button light-button" onclick="closeModal()">취소</button><button class="button primary-button" onclick="saveDefaultTreeState()">저장</button></div></div>`; }
     function saveDefaultTreeState() { const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value; userSettings.subjectTreeDefaultState = selectedState; saveUserSettings(); closeModal(); renderSubjectTree(); showFeedback('기본 보기 설정이 저장되었습니다.', 'success'); }
-                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                            
     async function addSubject() { const input = document.getElementById('new-subject-name'); const subjectName = input.value.trim(); if (!subjectName) { showFeedback('과목 이름을 입력해주세요.'); return; } try { await db.collection('subjects').add({ name: subjectName, questionCount: 0 }); showFeedback(`'${subjectName}' 과목이 추가되었습니다.`, 'success'); hideAddSubjectForm(); await loadSubjects(); } catch (error) { console.error("과목 추가 중 오류:", error); showFeedback('과목 추가 중 오류가 발생했습니다.'); } }
     function showAddSubjectForm() { if(document.getElementById('add-subject-form')) return; const listDiv = document.getElementById('subject-list'); listDiv.insertAdjacentHTML('beforeend', `<div id="add-subject-form" style="margin-top: 20px; padding: 20px; border: 1px solid #eee; border-radius: 8px;"><div class="form-group"><label style="font-weight: bold;">새 과목 이름</label><input type="text" id="new-subject-name" placeholder="예: 정보처리기사 필기"></div><div style="display: flex; gap: 10px; margin-top: 5px;"><button class="button light-button" style="flex: 1;" onclick="hideAddSubjectForm()">취소</button><button class="button primary-button" style="flex: 1;" onclick="addSubject()">저장</button></div></div>`); document.getElementById('add-subject-button').classList.add('hidden');}
     function hideAddSubjectForm() { const form = document.getElementById('add-subject-form'); if(form) form.remove(); document.getElementById('add-subject-button').classList.remove('hidden'); }
@@ -367,7 +367,9 @@
     }
     async function deleteProblem(questionId) { if (!confirm("정말로 이 문제를 삭제하시겠습니까?")) return; try { const subjectRef = db.collection('subjects').doc(currentSubjectId); await subjectRef.collection('questions').doc(questionId).delete(); await db.runTransaction(async t => { const doc = await t.get(subjectRef); t.update(subjectRef, { questionCount: Math.max(0, (doc.data().questionCount || 1) - 1) }); }); showFeedback("문제가 삭제되었습니다.", "success"); await showManagementView(true); } catch(error) { console.error(error); showFeedback("문제 삭제 중 오류 발생"); } }
 
-    // 퀴즈 실행 함수
+    // ==================================
+    // ## 퀴즈 실행 함수 ##
+    // ==================================
     async function startQuiz(id) {
         const doc = await db.collection('subjects').doc(id).get();
         if (!doc.exists) { showFeedback("과목 정보를 찾을 수 없습니다."); return; }
