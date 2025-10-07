@@ -163,25 +163,27 @@
         document.getElementById('signup-view').innerHTML = `<h2>회원가입</h2><div class="form-group"><label for="signup-email">이메일</label><input type="email" id="signup-email"></div><div class="form-group"><label for="signup-password">비밀번호</label><input type="password" id="signup-password"></div><button class="button primary-button" onclick="signUp()">회원가입</button><button class="button light-button" onclick="showView('subject-view')">취소</button>`;
         document.getElementById('add-edit-view').innerHTML = `<h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><h4>1. 문제 정보 (필수)</h4><div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div><div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div><div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div><hr><h4>2. 목차 정보 (이론 학습용)</h4><div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div><div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div><div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div><hr><h4>3. 기출 정보 (실전 학습용)</h4><div class="form-group"><label for="q-examYear">연도</label><input type="text" id="q-examYear" placeholder="예: 2024"></div><div class="form-group"><label for="q-examRound">회차</label><input type="text" id="q-examRound" placeholder="예: 1회"></div><div class="form-group"><label for="q-examNumber">문제 번호</label><input type="text" id="q-examNumber" placeholder="예: 45번"></div><hr><h4>4. 객관식 보기 (선택)</h4><div class="form-group"><div id="q-options-container"></div><button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button></div><hr><h4>5. 개념 분석 (키워드/태그)</h4><div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div><div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div><div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div><hr><div style="display:flex; gap: 10px;"><button class="button light-button" onclick="showManagementView(false)">취소</button><button id="save-full-btn" class="button primary-button">저장</button></div>`;
 
-        auth.onAuthStateChanged((user) => {
-            const authContainer = document.getElementById('auth-container');
-            if(authContainer) {
-                authContainer.innerHTML = user
-                    ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`
-                    : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`;
-            }
+       auth.onAuthStateChanged((user) => {
+    // 이 부분이 추가되었습니다!
+    console.log("인증 상태 감시자 작동! user 객체:", user);
 
-            if (user) {
-                initializeApp(user); // 로그인 시 앱 초기화 함수 호출
-            } else {
-                // 로그아웃 시 상태 초기화
-                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
-                const subjectList = document.getElementById('subject-list');
-                if(subjectList) subjectList.innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`;
-                showView('login-view');
-            }
-        });
-    });
+    const authContainer = document.getElementById('auth-container');
+    if(authContainer) {
+        authContainer.innerHTML = user
+            ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`
+            : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`;
+    }
+
+    if (user) {
+        initializeApp(user); // 로그인 시 앱 초기화 함수 호출
+    } else {
+        // 로그아웃 시 상태 초기화
+        userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
+        const subjectList = document.getElementById('subject-list');
+        if(subjectList) subjectList.innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`;
+        showView('login-view');
+    }
+});
 
     // ==================================
     // ## 핵심 유틸리티 함수 ##
