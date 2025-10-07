@@ -289,7 +289,18 @@
     async function saveSubject(subjectId) { const data = { name: document.getElementById('subject-name').value.trim(), discipline: document.getElementById('subject-discipline').value.trim(), semester: document.getElementById('subject-semester').value.trim() }; if (!data.name || !data.discipline) { showFeedback('학문과 과목명은 필수입니다.'); return; } try { if (subjectId) { await db.collection('subjects').doc(subjectId).update(data); showFeedback('과목이 수정되었습니다.', 'success'); } else { data.questionCount = 0; await db.collection('subjects').add(data); showFeedback('새 과목이 추가되었습니다.', 'success'); } closeModal(); await loadSubjects(); } catch (error) { console.error("과목 저장 중 오류:", error); showFeedback('과목 저장 중 오류가 발생했습니다.'); } }
     async function deleteSubject(subjectId, subjectName) { if (!confirm(`'${subjectName}' 과목과 모든 문제를 삭제합니다. 계속하시겠습니까?`)) return; try { const questionsSnapshot = await db.collection('subjects').doc(subjectId).collection('questions').get(); const batch = db.batch(); questionsSnapshot.forEach(doc => batch.delete(doc.ref)); const subjectRef = db.collection('subjects').doc(subjectId); batch.delete(subjectRef); await batch.commit(); showFeedback(`'${subjectName}' 과목이 삭제되었습니다.`, 'success'); await loadSubjects(); } catch (error) { console.error("과목 삭제 중 오류:", error); showFeedback('과목 삭제 중 오류가 발생했습니다.'); } }
     function showTreeSettingsModal() { const modalContainer = document.getElementById('modal-container'); const isDefaultExpanded = userSettings.subjectTreeDefaultState === 'expanded'; modalContainer.innerHTML = `<div class="modal-backdrop" onclick="closeModal()"></div><div class="modal"><h3>과목 트리 기본 보기 설정</h3><div class="form-group"><label><input type="radio" name="tree-default-state" value="expanded" ${isDefaultExpanded ? 'checked' : ''}> 모두 펼치기</label><label><input type="radio" name="tree-default-state" value="collapsed" ${!isDefaultExpanded ? 'checked' : ''}> 모두 접기</label></div><div style="display: flex; gap: 10px;"><button class="button light-button" onclick="closeModal()">취소</button><button class="button primary-button" onclick="saveDefaultTreeState()">저장</button></div></div>`; }
-    function saveDefaultTreeState() { const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value; userSettings.subjectTreeDefaultState = selectedState; saveUserSettings(); closeModal(); renderSubjectTree(); showFeedback('기본 보기 설정이 저장되었습니다.', 'success'); }
+    function saveDefaultTreeState() {
+    const selectedState = document.querySelector('input[name="tree-default-state"]:checked').value;
+    userSettings.subjectTreeDefaultState = selectedState;
+
+    // '전체 설정'을 새로 저장할 때, 기존의 모든 '개별 기억'을 초기화합니다.
+    userSettings.subjectTreeState = {}; 
+
+    saveUserSettings(); // 초기화된 상태까지 함께 DB에 저장합니다.
+    closeModal();
+    renderSubjectTree(); // 즉시 화면에 반영합니다.
+    showFeedback('기본 보기 설정이 저장되었습니다.', 'success');
+}
         
     // ==================================
     // ## 문제 관리(Management View) 함수 ##
