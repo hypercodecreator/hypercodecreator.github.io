@@ -153,6 +153,16 @@
     // ==================================
     // ## 앱 초기화 및 화면 렌더링 ##
     // ==================================
+
+    async function initializeApp(user) {
+        console.log("1. 앱 초기화를 시작합니다.");
+        await loadUserSettings(user.uid);
+        console.log("2. 사용자 설정 로딩 완료. 현재 기본 상태:", userSettings.subjectTreeDefaultState);
+        await loadSubjects(); // 이 함수 안에서 renderSubjectTree가 호출됩니다.
+        console.log("3. 과목 로딩 및 트리 렌더링 완료.");
+        showView('subject-view');
+    }
+    
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('auth-container').innerHTML = `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div><div id="logged-in-view" class="hidden"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`;
         document.getElementById('subject-view').innerHTML = `<h2>과목 선택</h2><div id="subject-controls"><div id="subject-tree-actions"><button class="button light-button small-button" onclick="expandAllNodes()">모두 펼치기</button><button class="button light-button small-button" onclick="collapseAllNodes()">모두 접기</button><button class="icon-button" onclick="showTreeSettingsModal()" title="기본 보기 설정">⚙️</button></div><input type="search" id="subject-search" placeholder="학문/학기/과목명 검색..." onkeyup="filterSubjectTree()"></div><div id="subject-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px;"></div><button class="button primary-button" onclick="showSubjectForm()">+ 새 과목 추가</button>`;
@@ -162,24 +172,22 @@
         document.getElementById('add-edit-view').innerHTML = `<h2 id="add-edit-header"></h2><input type="hidden" id="editing-question-id"><h4>1. 문제 정보 (필수)</h4><div class="form-group"><label for="q-text-full">문제 내용</label><textarea id="q-text-full" rows="3"></textarea></div><div class="form-group"><label for="q-answer-full">정답</label><input type="text" id="q-answer-full"></div><div class="form-group"><label for="q-explanation-full">해설</label><textarea id="q-explanation-full" rows="3"></textarea></div><hr><h4>2. 목차 정보 (이론 학습용)</h4><div class="form-group"><label for="q-part">대분류</label><input type="text" id="q-part" placeholder="예: 1과목 데이터베이스"></div><div class="form-group"><label for="q-chapter">중분류</label><input type="text" id="q-chapter" placeholder="예: 1장 정규화"></div><div class="form-group"><label for="q-section">소분류</label><input type="text" id="q-section" placeholder="예: 1절 BCNF"></div><hr><h4>3. 기출 정보 (실전 학습용)</h4><div class="form-group"><label for="q-examYear">연도</label><input type="text" id="q-examYear" placeholder="예: 2024"></div><div class="form-group"><label for="q-examRound">회차</label><input type="text" id="q-examRound" placeholder="예: 1회"></div><div class="form-group"><label for="q-examNumber">문제 번호</label><input type="text" id="q-examNumber" placeholder="예: 45번"></div><hr><h4>4. 객관식 보기 (선택)</h4><div class="form-group"><div id="q-options-container"></div><button class="button light-button small-button" onclick="addDynamicField('option')">+ 보기 추가</button></div><hr><h4>5. 개념 분석 (키워드/태그)</h4><div class="form-group"><label>키워드</label><div id="q-keywords-container"></div><button class="button light-button small-button" onclick="addDynamicField('keyword')">+ 키워드 추가</button></div><div class="form-group"><label>태그</label><div id="q-tags-container"></div><button class="button light-button small-button" onclick="addDynamicField('tag')">+ 태그 추가</button></div><div class="form-group"><label>메타태그</label><div id="q-metatags-container"></div><button class="button light-button small-button" onclick="addDynamicField('metatag')">+ 메타태그 추가</button></div><hr><div style="display:flex; gap: 10px;"><button class="button light-button" onclick="showManagementView(false)">취소</button><button id="save-full-btn" class="button primary-button">저장</button></div>`;
     
        // 인증 상태 변경 감지
-        auth.onAuthStateChanged(async (user) => {
-            const authContainer = document.getElementById('auth-container');
-            if(authContainer) { 
-                authContainer.innerHTML = user 
-                    ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>` 
-                    : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`;
-            }
+        auth.onAuthStateChanged((user) => {
+        const authContainer = document.getElementById('auth-container');
+        if(authContainer) {
+            authContainer.innerHTML = user
+                ? `<span id="user-email">${user.email}님</span><div id="logged-in-view"><button class="button secondary-button" onclick="logOut()">로그아웃</button></div>`
+                : `<span id="user-email"></span><div id="logged-out-view"><button class="button light-button" onclick="showView('login-view')">로그인</button><button class="button primary-button" onclick="showView('signup-view')">회원가입</button></div>`;
+        }
 
-            if (user) { 
-                await loadUserSettings(user.uid);
-                await loadSubjects(); 
-                showView('subject-view'); 
-            } else { 
-                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
-                document.getElementById('subject-list').innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`; 
-                showView('login-view');
-            } 
-        });
+        if (user) {
+            initializeApp(user); // 분리된 초기화 함수를 호출합니다.
+        } else {
+            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
+            const subjectList = document.getElementById('subject-list');
+            if(subjectList) subjectList.innerHTML = `<p style="text-align:center; padding: 20px;">로그인 후 이용해주세요.</p>`;
+            showView('login-view');
+        }
     });
 
     // ==================================
@@ -192,32 +200,27 @@
     // ## 인증 및 앱 시작 함수 ##
     // ==================================
     
-    async function loadUserSettings(userId) { 
-        const userDocRef = db.collection('users').doc(userId); 
-        try { 
-            const doc = await userDocRef.get(); 
-            if (doc.exists && doc.data().settings) { 
-                userSettings = doc.data().settings; 
-                if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {}; 
-                if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded'; 
-            } else { 
-                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; 
-            } 
-        } catch (error) { 
-            console.error("Error loading user settings:", error); 
-            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' }; 
-        } 
+    async function loadUserSettings(userId) {
+        const userDocRef = db.collection('users').doc(userId);
+        try {
+            const doc = await userDocRef.get();
+            if (doc.exists && doc.data().settings) {
+                console.log("DB에서 설정 발견:", doc.data().settings);
+                userSettings = doc.data().settings;
+                // 설정 객체 내부에 값이 없을 경우를 대비한 기본값 설정
+                if (!userSettings.subjectTreeState) userSettings.subjectTreeState = {};
+                if (!userSettings.subjectTreeDefaultState) userSettings.subjectTreeDefaultState = 'expanded';
+            } else {
+                console.log("DB에 설정 없음. 기본값(expanded)을 사용합니다.");
+                userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
+            }
+        } catch (error) {
+            console.error("사용자 설정 로딩 중 오류:", error);
+            userSettings = { subjectTreeState: {}, subjectTreeDefaultState: 'expanded' };
+        }
     }
-    async function saveUserSettings() { 
-        const user = auth.currentUser; 
-        if (!user) return; 
-        const userDocRef = db.collection('users').doc(user.uid); 
-        try { 
-            await userDocRef.set({ settings: userSettings }, { merge: true }); 
-        } catch (error) { 
-            console.error("Error saving user settings:", error); 
-        } 
-    }
+        
+    async function saveUserSettings() { const user = auth.currentUser; if (!user) return; const userDocRef = db.collection('users').doc(user.uid); try { await userDocRef.set({ settings: userSettings }, { merge: true }); } catch (error) { console.error("Error saving user settings:", error); } }
     async function signUp() { try { await auth.createUserWithEmailAndPassword(document.getElementById('signup-email').value, document.getElementById('signup-password').value); } catch (e) { showFeedback(e.message); } }
     async function logIn() { try { await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (e) { showFeedback(e.message); } }
     function logOut() { auth.signOut(); }
