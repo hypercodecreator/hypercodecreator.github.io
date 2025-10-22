@@ -858,26 +858,34 @@ async function renderMonthlyCalendar() {
         if (currentQuizIndex > 0) {
             updateDailyProgress(currentQuizIndex); // 현재까지 푼 문제 수를 반영
         }
-        renderMonthlyCalendar();
+        renderMonthlyCalendar(); // ✨ await 없이 호출해야 합니다.
         showView('subject-view');
     }
-
     function displayCurrentQuiz() {
         const quizView = document.getElementById('quiz-view');
         
         if (currentQuizIndex >= quizQuestions.length) {
             updateDailyProgress(quizQuestions.length);
-            renderMonthlyCalendar();
-            quizView.innerHTML = `...`; // (결과 화면은 동일)
+            renderMonthlyCalendar(); // ✨ await 없이 호출해야 합니다.
+    
+            // (기존의 결과 화면 코드...)
+            quizView.innerHTML = `
+                <div id="quiz-header">퀴즈 완료!</div>
+                <div id="quiz-body">
+                    <h4>총 ${quizQuestions.length}문제 중 ${quizScore}문제를 맞혔습니다.</h4>
+                </div>
+                <div id="quiz-footer">
+                    <button class="button primary-button" onclick="showView('subject-view')">↩️ 과목 선택으로</button>
+                </div>
+            `;
             return;
         }
-
+    
         const q = quizQuestions[currentQuizIndex];
         const optionsHTML = (q.options && q.options.length > 0) 
             ? q.options.map(opt => `<div class="option">${opt}</div>`).join('')
             : '<div class="form-group"><label for="subjective-answer">정답 입력:</label><input type="text" id="subjective-answer"></div>';
-
-        // ✨ '퀴즈 중단' 버튼이 exitQuiz()를 호출하도록 수정
+    
         quizView.innerHTML = `
             <div id="quiz-header">${currentQuizIndex + 1} / ${quizQuestions.length}</div>
             <div id="quiz-body">
@@ -890,18 +898,15 @@ async function renderMonthlyCalendar() {
                 <button class="button light-button" onclick="exitQuiz()">↩️ 퀴즈 중단</button>
             </div>
         `;
-
-        // ✨ 객관식 보기 선택 시 시각적 피드백을 주도록 이벤트 리스너 수정 (문제 1 해결)
+    
         quizView.querySelectorAll('.option').forEach(el => {
             el.addEventListener('click', (e) => {
-                // 모든 보기에서 'selected' 스타일 제거
                 quizView.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                // 클릭한 보기에만 'selected' 스타일 추가
                 e.currentTarget.classList.add('selected');
                 selectedOption = e.currentTarget.textContent;
             });
         });
-
+    
         document.getElementById('submit-btn').addEventListener('click', submitAnswer);
     }
     
